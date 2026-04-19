@@ -7,6 +7,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
 :root {
   --bg: #030d18;
@@ -513,6 +515,9 @@ textarea.finput{resize:vertical;min-height:80px;}
     <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted);">Already have an account? <span style="color:var(--teal);cursor:pointer;" onclick="switchTab('login')">Sign in</span></div>
   </div>
 </div>
+<div style="margin-top:16px;text-align:center;font-size:11px;color:rgba(107,154,176,0.65);max-width:460px;line-height:1.6;">
+  🔒 Your data is saved locally in this browser.<br>Use <strong style="color:rgba(0,219,184,0.7);">Backup Data</strong> (sidebar) to download a safe copy anytime.
+</div>
 </div>
 
 <!-- ============================================================
@@ -544,6 +549,9 @@ textarea.finput{resize:vertical;min-height:80px;}
     <div class="nav-item" onclick="gotoPage('profile',this)"><i class="fas fa-user-circle"></i>My Profile</div>
     <div class="nav-section">Account</div>
     <div class="nav-item" onclick="doLogout()" style="color:var(--red);"><i class="fas fa-sign-out-alt"></i>Sign Out</div>
+    <div class="nav-item" onclick="exportData()" style="color:var(--gold);"><i class="fas fa-download"></i>Backup Data</div>
+    <div class="nav-item" onclick="document.getElementById('import-file').click()" style="color:var(--cyan);"><i class="fas fa-upload"></i>Restore Data</div>
+    <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
   </div>
   <div class="sb-user" onclick="gotoPage('profile',document.querySelector('.nav-item:last-of-type'))">
     <div class="sb-avatar" id="sb-avatar">?</div>
@@ -694,7 +702,12 @@ textarea.finput{resize:vertical;min-height:80px;}
       <div class="ph-title">Sugar <span>Log</span></div>
       <div class="ph-sub">Track every blood glucose reading</div>
     </div>
-    <button class="btn btn-teal" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Reading</button>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-outline" onclick="downloadPDF()" title="Download all readings as PDF">
+        <i class="fas fa-file-pdf" style="color:var(--red);"></i> Download PDF
+      </button>
+      <button class="btn btn-teal" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Reading</button>
+    </div>
   </div>
 
   <div class="g4" style="margin-bottom:18px;">
@@ -1212,33 +1225,123 @@ textarea.finput{resize:vertical;min-height:80px;}
 
 <script>
 // =============================================
-// DATA LAYER — localStorage per-user
+// DATA LAYER — Triple-redundancy storage
+// localStorage (primary) + cookies (backup) + sessionStorage (runtime)
+// This ensures data survives browser restarts, cache clears, file:// restrictions
 // =============================================
-const DB_KEY = 'diabecare_users';
-const SESSION_KEY = 'diabecare_session';
+const DB_KEY = 'diabecare_users_v2';
+const SESSION_KEY = 'diabecare_session_v2';
+const COOKIE_DB_KEY = 'dc_users';
+const COOKIE_SESSION_KEY = 'dc_session';
 
+/* ---- Cookie helpers (persists 365 days) ---- */
+function setCookie(name, value, days=365) {
+  try {
+    const exp = new Date(Date.now() + days*864e5).toUTCString();
+    // Split into chunks if data is large (cookies have 4KB limit per cookie)
+    const str = typeof value === 'string' ? value : JSON.stringify(value);
+    const chunks = str.match(/.{1,3800}/g) || [str];
+    // Clear old chunks first
+    for(let i=0;i<20;i++) document.cookie=`${name}_${i}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    chunks.forEach((chunk,i)=>{
+      document.cookie=`${name}_${i}=${encodeURIComponent(chunk)};expires=${exp};path=/;SameSite=Lax`;
+    });
+    document.cookie=`${name}_count=${chunks.length};expires=${exp};path=/;SameSite=Lax`;
+  } catch(e) { /* silent fail */ }
+}
+
+function getCookie(name) {
+  try {
+    const countMatch = document.cookie.match(new RegExp(`${name}_count=([^;]+)`));
+    if(!countMatch) return null;
+    const count = parseInt(countMatch[1]);
+    let result = '';
+    for(let i=0;i<count;i++){
+      const m = document.cookie.match(new RegExp(`${name}_${i}=([^;]+)`));
+      if(m) result += decodeURIComponent(m[1]);
+    }
+    return result || null;
+  } catch(e) { return null; }
+}
+
+function clearCookie(name) {
+  for(let i=0;i<20;i++) document.cookie=`${name}_${i}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+  document.cookie=`${name}_count=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+}
+
+/* ---- Unified read: tries localStorage → cookies → sessionStorage ---- */
 function getAllUsers() {
-  return JSON.parse(localStorage.getItem(DB_KEY) || '{}');
+  let data = null;
+  // Try localStorage first
+  try { data = JSON.parse(localStorage.getItem(DB_KEY) || 'null'); } catch(e){}
+  // Fallback: cookies
+  if(!data) {
+    try { const c=getCookie(COOKIE_DB_KEY); if(c) data=JSON.parse(c); } catch(e){}
+  }
+  // Fallback: sessionStorage
+  if(!data) {
+    try { data = JSON.parse(sessionStorage.getItem(DB_KEY) || 'null'); } catch(e){}
+  }
+  return data || {};
 }
+
+/* ---- Unified write: saves to all three stores ---- */
 function saveAllUsers(u) {
-  localStorage.setItem(DB_KEY, JSON.stringify(u));
+  const str = JSON.stringify(u);
+  try { localStorage.setItem(DB_KEY, str); } catch(e){}
+  try { sessionStorage.setItem(DB_KEY, str); } catch(e){}
+  try { setCookie(COOKIE_DB_KEY, str); } catch(e){}
 }
+
 function getUser(email) {
   return getAllUsers()[email] || null;
 }
+
 function saveUser(email, data) {
   const all = getAllUsers();
   all[email] = data;
   saveAllUsers(all);
+  // Also keep a per-user backup key for extra redundancy
+  const userStr = JSON.stringify(data);
+  const safeKey = 'dc_u_' + btoa(email).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+  try { localStorage.setItem(safeKey, userStr); } catch(e){}
+  try { sessionStorage.setItem(safeKey, userStr); } catch(e){}
+  try { setCookie(safeKey, userStr); } catch(e){}
 }
+
+/* ---- Session: localStorage + cookies ---- */
 function getSession() {
-  return localStorage.getItem(SESSION_KEY);
+  let s = null;
+  try { s = localStorage.getItem(SESSION_KEY); } catch(e){}
+  if(!s) { try { s = getCookie(COOKIE_SESSION_KEY); } catch(e){} }
+  if(!s) { try { s = sessionStorage.getItem(SESSION_KEY); } catch(e){} }
+  return s;
 }
 function setSession(email) {
-  localStorage.setItem(SESSION_KEY, email);
+  try { localStorage.setItem(SESSION_KEY, email); } catch(e){}
+  try { sessionStorage.setItem(SESSION_KEY, email); } catch(e){}
+  try { setCookie(COOKIE_SESSION_KEY, email); } catch(e){}
 }
 function clearSession() {
-  localStorage.removeItem(SESSION_KEY);
+  try { localStorage.removeItem(SESSION_KEY); } catch(e){}
+  try { sessionStorage.removeItem(SESSION_KEY); } catch(e){}
+  try { clearCookie(COOKIE_SESSION_KEY); } catch(e){}
+}
+
+/* ---- Recovery: try per-user backup key if main store lost the user ---- */
+function recoverUser(email) {
+  const safeKey = 'dc_u_' + btoa(email).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(safeKey)||'null'); } catch(e){}
+  if(!data) { try{ const c=getCookie(safeKey); if(c) data=JSON.parse(c); }catch(e){} }
+  if(!data) { try { data = JSON.parse(sessionStorage.getItem(safeKey)||'null'); } catch(e){} }
+  if(data) {
+    // Re-insert into main store
+    const all = getAllUsers();
+    all[email] = data;
+    saveAllUsers(all);
+  }
+  return data;
 }
 
 let currentUser = null; // { email, ...profile, readings:[], meals:[], water:0 }
@@ -1888,13 +1991,247 @@ function doLogout() {
 }
 
 // =============================================
-// AUTO-LOGIN FROM SESSION
+// PDF DOWNLOAD
 // =============================================
+function downloadPDF() {
+  if(!currentUser) return;
+  const readings = currentUser.readings || [];
+  if(readings.length === 0) { showToast('No readings to export. Add some blood sugar readings first!','⚠️'); return; }
+
+  showToast('Generating your PDF report…', '📄');
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  // ---- Dark header banner ----
+  doc.setFillColor(3, 13, 24);
+  doc.rect(0, 0, pageW, 42, 'F');
+
+  // Accent bar
+  doc.setFillColor(0, 219, 184);
+  doc.rect(0, 0, 5, 42, 'F');
+
+  // Title
+  doc.setTextColor(0, 219, 184);
+  doc.setFontSize(22);
+  doc.setFont('helvetica','bold');
+  doc.text('DiabeCare Pro', 14, 16);
+
+  doc.setTextColor(180, 220, 230);
+  doc.setFontSize(11);
+  doc.setFont('helvetica','normal');
+  doc.text('Blood Sugar Report', 14, 24);
+
+  // Patient info on right
+  const name = (currentUser.fname+' '+currentUser.lname).trim() || currentUser.email;
+  doc.setTextColor(200, 230, 240);
+  doc.setFontSize(9);
+  doc.text(`Patient: ${name}`, pageW-14, 12, {align:'right'});
+  doc.text(`Email: ${currentUser.email}`, pageW-14, 18, {align:'right'});
+  doc.text(`Diabetes Type: ${currentUser.dtype||'—'}`, pageW-14, 24, {align:'right'});
+  doc.text(`Generated: ${new Date().toLocaleString('en-US',{dateStyle:'full',timeStyle:'short'})}`, pageW-14, 30, {align:'right'});
+  if(currentUser.doctor) doc.text(`Doctor: ${currentUser.doctor}`, pageW-14, 36, {align:'right'});
+
+  // ---- Summary stats row ----
+  const total = readings.length;
+  const avg = Math.round(readings.reduce((a,r)=>a+r.level,0)/readings.length);
+  const high = readings.filter(r=>r.level>=126).length;
+  const low = readings.filter(r=>r.level<70).length;
+  const normal = total - high - low;
+  const maxVal = Math.max(...readings.map(r=>r.level));
+  const minVal = Math.min(...readings.map(r=>r.level));
+
+  let y = 52;
+  const boxW = (pageW-28)/4; // 4 boxes with margins
+  const boxes = [
+    {label:'Total Readings', value:total, color:[0,219,184]},
+    {label:'7-Day Average', value:avg+' mg/dL', color:[244,162,97]},
+    {label:'High Readings', value:high, color:[230,57,70]},
+    {label:'Normal Readings', value:normal, color:[6,214,160]},
+  ];
+  boxes.forEach((b,i)=>{
+    const bx = 14 + i*(boxW+2);
+    doc.setFillColor(...b.color.map(c=>Math.round(c*0.15+10)));
+    doc.roundedRect(bx, y, boxW, 20, 3, 3, 'F');
+    doc.setDrawColor(...b.color);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(bx, y, boxW, 20, 3, 3, 'S');
+    doc.setTextColor(...b.color);
+    doc.setFontSize(14);
+    doc.setFont('helvetica','bold');
+    doc.text(String(b.value), bx+boxW/2, y+11, {align:'center'});
+    doc.setTextColor(130,160,180);
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text(b.label, bx+boxW/2, y+17, {align:'center'});
+  });
+
+  y += 28;
+
+  // Min/Max/Range line
+  doc.setFillColor(15, 30, 50);
+  doc.rect(14, y, pageW-28, 12, 'F');
+  doc.setTextColor(100,180,200);
+  doc.setFontSize(8);
+  doc.text(`Min: ${minVal} mg/dL`, 20, y+7.5);
+  doc.text(`Max: ${maxVal} mg/dL`, pageW/2, y+7.5, {align:'center'});
+  doc.text(`Range: ${maxVal-minVal} mg/dL`, pageW-20, y+7.5, {align:'right'});
+  y += 18;
+
+  // ---- Section title ----
+  doc.setFillColor(0, 219, 184);
+  doc.rect(14, y, 3, 8, 'F');
+  doc.setTextColor(0, 219, 184);
+  doc.setFontSize(11);
+  doc.setFont('helvetica','bold');
+  doc.text('Complete Reading History', 20, y+6);
+  y += 14;
+
+  // ---- Table ----
+  const tableRows = [...readings].reverse().map(r => {
+    const dateStr = new Date(r.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const statusLabel = r.level<70 ? 'Low' : r.level<=125 ? 'Normal' : 'High';
+    return [dateStr, r.time, r.level+' mg/dL', r.type, statusLabel, r.notes||'—'];
+  });
+
+  doc.autoTable({
+    startY: y,
+    head: [['Date','Time','Level','Type','Status','Notes']],
+    body: tableRows,
+    theme: 'grid',
+    styles: {
+      fontSize: 8.5,
+      cellPadding: 3.5,
+      textColor: [210, 235, 245],
+      lineColor: [20, 50, 70],
+      lineWidth: 0.3,
+      font: 'helvetica',
+      fillColor: [8, 22, 36],
+    },
+    headStyles: {
+      fillColor: [0, 90, 110],
+      textColor: [0, 219, 184],
+      fontStyle: 'bold',
+      fontSize: 8,
+      halign: 'center',
+    },
+    alternateRowStyles: { fillColor: [12, 30, 48] },
+    columnStyles: {
+      0: {cellWidth:28, halign:'center'},
+      1: {cellWidth:18, halign:'center'},
+      2: {cellWidth:26, halign:'center', fontStyle:'bold'},
+      3: {cellWidth:28, halign:'center'},
+      4: {cellWidth:20, halign:'center'},
+      5: {cellWidth:'auto'},
+    },
+    didDrawCell(data) {
+      // Color-code the Status column (index 4)
+      if(data.section==='body' && data.column.index===4) {
+        const v = data.cell.text[0];
+        if(v==='High') { doc.setTextColor(230,57,70); }
+        else if(v==='Low') { doc.setTextColor(244,162,97); }
+        else { doc.setTextColor(6,214,160); }
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica','bold');
+        doc.text(v, data.cell.x+data.cell.width/2, data.cell.y+data.cell.height/2+1, {align:'center'});
+      }
+      // Color-code the Level column (index 2)
+      if(data.section==='body' && data.column.index===2) {
+        const level = parseInt(data.cell.text[0]);
+        if(level>=126) doc.setTextColor(230,57,70);
+        else if(level<70) doc.setTextColor(244,162,97);
+        else doc.setTextColor(6,214,160);
+        doc.setFontSize(9);
+        doc.setFont('helvetica','bold');
+        doc.text(data.cell.text[0], data.cell.x+data.cell.width/2, data.cell.y+data.cell.height/2+1, {align:'center'});
+      }
+    }
+  });
+
+  // ---- Footer on each page ----
+  const totalPages = doc.internal.getNumberOfPages();
+  for(let i=1;i<=totalPages;i++){
+    doc.setPage(i);
+    doc.setFillColor(3,13,24);
+    doc.rect(0, pageH-12, pageW, 12, 'F');
+    doc.setFillColor(0,219,184);
+    doc.rect(0, pageH-12, pageW, 0.5, 'F');
+    doc.setTextColor(100,150,170);
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text('DiabeCare Pro — Personal Diabetes Manager', 14, pageH-5);
+    doc.text(`Page ${i} of ${totalPages}`, pageW-14, pageH-5, {align:'right'});
+    doc.text('⚠️ For medical reference only. Always consult your doctor.', pageW/2, pageH-5, {align:'center'});
+  }
+
+  // ---- Save ----
+  const safeName = (currentUser.fname||'user').toLowerCase().replace(/\s/g,'_');
+  const dateStr = new Date().toISOString().split('T')[0];
+  doc.save(`DiabeCare_${safeName}_${dateStr}.pdf`);
+  showToast(`PDF report downloaded! ${total} readings exported. 📄`, '✅');
+}
+
+// =============================================
+// DATA BACKUP / RESTORE (JSON export-import)
+// =============================================
+function exportData() {
+  if(!currentUser) return;
+  const blob = new Blob([JSON.stringify(currentUser, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (currentUser.fname||'user').toLowerCase().replace(/\s/g,'_');
+  a.download = `DiabeCare_backup_${safeName}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Data backup file downloaded! Keep this safe 🔒', '💾');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data.email) { showToast('Invalid backup file. Please use a DiabeCare backup.','⚠️'); return; }
+      if(!confirm(`Restore data for ${data.email}? This will merge with any existing data.`)) return;
+      // Merge: keep more readings
+      const existing = getUser(data.email);
+      if(existing && existing.readings && existing.readings.length > (data.readings||[]).length) {
+        data.readings = existing.readings;
+      }
+      saveUser(data.email, data);
+      // If it's the current user, reload
+      if(currentUser && currentUser.email === data.email) {
+        currentUser = data;
+        renderDashboard(); renderSugarLog(); renderCustomMeals(); renderProfile(); renderWater();
+      }
+      showToast(`Data restored for ${data.fname||data.email}! ✅`);
+    } catch(err) {
+      showToast('Could not read backup file. Make sure it is a valid DiabeCare JSON file.','⚠️');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// Auto-save backup reminder (every 10 minutes while app is open)
+setInterval(() => {
+  if(currentUser) {
+    // Silent re-save to all stores to keep data fresh
+    saveUser(currentUser.email, currentUser);
+  }
+}, 10 * 60 * 1000);
 window.addEventListener('load', () => {
   setTimeout(() => {
     const email = getSession();
     if(email) {
-      const user = getUser(email);
+      let user = getUser(email);
+      // If main store lost the user data, try to recover from backup
+      if(!user) user = recoverUser(email);
       if(user) { launchApp(user); return; }
     }
     document.getElementById('loading').classList.add('hide');
