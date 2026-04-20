@@ -1,0 +1,2661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DiabeCare Pro — Personal Diabetes Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+:root {
+  --bg: #030d18;
+  --bg2: #071828;
+  --bg3: #0c2235;
+  --card: rgba(255,255,255,0.035);
+  --card-b: rgba(0,220,180,0.14);
+  --teal: #00dbb8;
+  --teal2: #00b896;
+  --blue: #0077b6;
+  --cyan: #48cae4;
+  --gold: #f4a261;
+  --red: #e63946;
+  --green: #06d6a0;
+  --purple: #7b5ea7;
+  --text: #e8f4f8;
+  --muted: #6b9ab0;
+  --glow: 0 0 40px rgba(0,219,184,0.2);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--teal);border-radius:4px;}
+
+/* ===== CANVAS ===== */
+#bg-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.35;}
+
+/* ===== SCREEN SYSTEM ===== */
+.screen{display:none;position:relative;z-index:1;}
+.screen.active{display:flex;}
+
+/* ===================================================
+   LOGIN SCREEN
+================================================== */
+#login-screen{
+  min-height:100vh; align-items:center; justify-content:center;
+  flex-direction:column; padding:20px;
+}
+.login-card{
+  width:100%;max-width:460px;
+  background:rgba(7,24,40,0.85);
+  border:1px solid var(--card-b);
+  border-radius:28px;
+  padding:48px 40px 40px;
+  backdrop-filter:blur(24px);
+  box-shadow:0 32px 80px rgba(0,0,0,0.6),var(--glow);
+  animation:riseIn .6s cubic-bezier(.4,0,.2,1);
+}
+@keyframes riseIn{from{opacity:0;transform:translateY(40px);}to{opacity:1;transform:translateY(0);}}
+.login-logo{text-align:center;margin-bottom:32px;}
+.login-icon{
+  width:72px;height:72px;border-radius:22px;margin:0 auto 14px;
+  background:linear-gradient(135deg,var(--teal),var(--blue));
+  display:flex;align-items:center;justify-content:center;font-size:32px;
+  box-shadow:0 0 0 8px rgba(0,219,184,0.12),0 0 40px rgba(0,219,184,0.3);
+  animation:logoPulse 2.5s infinite;
+}
+@keyframes logoPulse{0%,100%{box-shadow:0 0 0 8px rgba(0,219,184,0.12),0 0 40px rgba(0,219,184,0.3);}50%{box-shadow:0 0 0 16px rgba(0,219,184,0.05),0 0 60px rgba(0,219,184,0.4);}}
+.login-brand{font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:var(--teal);}
+.login-tagline{font-size:13px;color:var(--muted);margin-top:4px;}
+.tab-switcher{display:flex;background:rgba(255,255,255,0.04);border-radius:12px;padding:4px;margin-bottom:28px;}
+.tab-btn{flex:1;padding:9px;border-radius:9px;border:none;background:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .25s;}
+.tab-btn.active{background:var(--teal);color:#03111f;}
+.form-label{display:block;font-size:11px;letter-spacing:.8px;color:var(--muted);margin-bottom:6px;text-transform:uppercase;}
+.form-input{
+  width:100%;padding:13px 16px;border-radius:12px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(0,220,180,0.18);
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;
+  outline:none;transition:all .25s;margin-bottom:16px;
+}
+.form-input:focus{border-color:var(--teal);background:rgba(0,219,184,0.07);box-shadow:0 0 0 3px rgba(0,219,184,0.12);}
+select.form-input option{background:#071828;}
+.btn-google{
+  width:100%;padding:14px;border-radius:12px;border:1px solid rgba(0,220,180,0.25);
+  background:rgba(255,255,255,0.04);color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:14px;font-weight:600;cursor:pointer;display:flex;align-items:center;
+  justify-content:center;gap:12px;transition:all .3s;margin-bottom:12px;
+}
+.btn-google:hover{border-color:var(--teal);background:rgba(0,219,184,0.08);transform:translateY(-1px);}
+.google-icon{width:20px;height:20px;}
+.divider{display:flex;align-items:center;gap:12px;color:var(--muted);font-size:12px;margin:14px 0;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.08);}
+.btn-primary{
+  width:100%;padding:14px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--teal),var(--blue));
+  color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:700;
+  cursor:pointer;transition:all .3s;letter-spacing:.3px;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,119,182,0.4);}
+.btn-primary:active{transform:scale(.98);}
+.login-error{
+  background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.3);
+  border-radius:10px;padding:10px 14px;font-size:13px;color:var(--red);
+  margin-bottom:14px;display:none;
+}
+.login-success{
+  background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.3);
+  border-radius:10px;padding:10px 14px;font-size:13px;color:var(--green);
+  margin-bottom:14px;display:none;
+}
+
+/* ===================================================
+   MAIN APP
+================================================== */
+#app-screen{min-height:100vh;flex-direction:column;}
+.app-wrap{display:flex;flex:1;min-height:100vh;}
+
+/* SIDEBAR */
+.sidebar{
+  width:250px;flex-shrink:0;
+  background:rgba(3,13,24,0.95);border-right:1px solid var(--card-b);
+  display:flex;flex-direction:column;position:fixed;top:0;left:0;
+  height:100vh;z-index:100;backdrop-filter:blur(20px);
+  transition:transform .3s;
+}
+.sb-logo{padding:26px 22px 20px;border-bottom:1px solid var(--card-b);}
+.sb-brand{font-family:'Fraunces',serif;font-size:20px;color:var(--teal);font-weight:900;}
+.sb-sub{font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-top:2px;}
+.nav{flex:1;padding:14px 10px;overflow-y:auto;}
+.nav-section{font-size:9px;letter-spacing:2.5px;color:var(--muted);padding:10px 12px 5px;text-transform:uppercase;}
+.nav-item{
+  display:flex;align-items:center;gap:11px;padding:10px 13px;
+  border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;
+  color:var(--muted);transition:all .25s;margin-bottom:2px;position:relative;overflow:hidden;
+}
+.nav-item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--teal);transform:scaleY(0);transition:transform .25s;border-radius:0 2px 2px 0;}
+.nav-item:hover,.nav-item.active{background:rgba(0,219,184,0.09);color:var(--text);}
+.nav-item:hover::before,.nav-item.active::before{transform:scaleY(1);}
+.nav-item.active{color:var(--teal);}
+.nav-item i{width:17px;text-align:center;}
+.sb-user{
+  padding:14px 18px;border-top:1px solid var(--card-b);
+  display:flex;align-items:center;gap:10px;cursor:pointer;transition:background .2s;
+}
+.sb-user:hover{background:rgba(255,255,255,0.03);}
+.sb-avatar{
+  width:36px;height:36px;border-radius:50%;
+  background:linear-gradient(135deg,var(--teal),var(--blue));
+  display:flex;align-items:center;justify-content:center;
+  font-weight:700;font-size:13px;flex-shrink:0;
+}
+.sb-name{font-size:12px;font-weight:600;}
+.sb-email{font-size:10px;color:var(--muted);max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+
+/* MAIN */
+.main{margin-left:250px;flex:1;padding:26px 28px;min-height:100vh;}
+
+/* PAGES */
+.page{display:none;animation:fadeUp .4s ease;}
+.page.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+
+/* PAGE HEADER */
+.ph{display:flex;align-items:center;justify-content:space-between;margin-bottom:26px;}
+.ph-title{font-family:'Fraunces',serif;font-size:30px;font-weight:900;}
+.ph-title span{color:var(--teal);}
+.ph-sub{font-size:12px;color:var(--muted);margin-top:3px;}
+
+/* CARDS */
+.card{
+  background:var(--card);border:1px solid var(--card-b);border-radius:16px;
+  padding:20px;backdrop-filter:blur(10px);transition:all .3s;position:relative;overflow:hidden;
+}
+.card:hover{border-color:rgba(0,219,184,0.3);box-shadow:var(--glow);transform:translateY(-1px);}
+.card-title{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:10px;}
+
+/* GRIDS */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:18px;}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px;}
+.g12{display:grid;grid-template-columns:1fr 2fr;gap:18px;margin-bottom:18px;}
+
+/* STAT CARDS */
+.stat{
+  background:var(--card);border:1px solid var(--card-b);
+  border-radius:16px;padding:18px;transition:all .3s;position:relative;overflow:hidden;
+}
+.stat:hover{transform:translateY(-3px);}
+.stat-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:17px;margin-bottom:12px;}
+.si-teal{background:rgba(0,219,184,0.13);color:var(--teal);}
+.si-gold{background:rgba(244,162,97,0.13);color:var(--gold);}
+.si-red{background:rgba(230,57,70,0.13);color:var(--red);}
+.si-green{background:rgba(6,214,160,0.13);color:var(--green);}
+.stat-val{font-family:'Space Mono',monospace;font-size:26px;font-weight:700;line-height:1;}
+.stat-lbl{font-size:12px;color:var(--muted);margin-top:4px;}
+.stat-trend{font-size:11px;margin-top:6px;}
+.trend-ok{color:var(--teal);}
+.trend-up{color:var(--red);}
+.trend-dn{color:var(--green);}
+
+/* BUTTONS */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:10px 20px;border-radius:10px;font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;border:none;transition:all .25s;
+}
+.btn:active{transform:scale(.97);}
+.btn-teal{background:linear-gradient(135deg,var(--teal),var(--teal2));color:#03111f;}
+.btn-outline{background:rgba(0,219,184,0.08);border:1px solid rgba(0,219,184,0.25);color:var(--teal);}
+.btn-outline:hover{background:rgba(0,219,184,0.15);}
+.btn-danger{background:rgba(230,57,70,0.15);border:1px solid rgba(230,57,70,0.3);color:var(--red);}
+.btn-danger:hover{background:rgba(230,57,70,0.25);}
+.btn-gold{background:rgba(244,162,97,0.15);border:1px solid rgba(244,162,97,0.3);color:var(--gold);}
+.btn-gold:hover{background:rgba(244,162,97,0.25);}
+.btn-sm{padding:7px 13px;font-size:11px;}
+.btn-xs{padding:4px 10px;font-size:11px;}
+
+/* ALERT */
+.alert{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;border-radius:12px;margin-bottom:14px;animation:slideIn .4s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(-16px);}to{opacity:1;transform:translateX(0);}}
+.alert-warn{background:rgba(244,162,97,0.1);border:1px solid rgba(244,162,97,0.25);}
+.alert-info{background:rgba(0,219,184,0.07);border:1px solid rgba(0,219,184,0.2);}
+.alert-danger{background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.25);}
+.alert i{font-size:16px;margin-top:1px;flex-shrink:0;}
+.alert-warn i{color:var(--gold);}
+.alert-info i{color:var(--teal);}
+.alert-danger i{color:var(--red);}
+.alert-t{font-size:13px;font-weight:600;margin-bottom:2px;}
+.alert-d{font-size:12px;color:var(--muted);}
+
+/* BADGE */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;}
+.b-normal{background:rgba(6,214,160,0.15);color:var(--green);}
+.b-high{background:rgba(230,57,70,0.15);color:var(--red);}
+.b-low{background:rgba(244,162,97,0.15);color:var(--gold);}
+.b-prediab{background:rgba(244,162,97,0.15);color:var(--gold);}
+
+/* SUGAR TABLE */
+.stbl{width:100%;border-collapse:collapse;}
+.stbl th{text-align:left;padding:10px 14px;font-size:10px;letter-spacing:1.5px;color:var(--muted);border-bottom:1px solid var(--card-b);text-transform:uppercase;}
+.stbl td{padding:12px 14px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle;}
+.stbl tr{transition:background .2s;}
+.stbl tr:hover td{background:rgba(0,219,184,0.04);}
+
+/* FORM */
+.fgroup{margin-bottom:14px;}
+.flabel{display:block;font-size:11px;color:var(--muted);margin-bottom:5px;letter-spacing:.4px;}
+.finput{
+  width:100%;padding:11px 14px;border-radius:10px;
+  background:rgba(255,255,255,0.05);border:1px solid rgba(0,220,180,0.18);
+  color:var(--text);font-family:'DM Sans',sans-serif;font-size:13.5px;
+  outline:none;transition:all .25s;
+}
+.finput:focus{border-color:var(--teal);background:rgba(0,219,184,0.06);box-shadow:0 0 0 3px rgba(0,219,184,0.1);}
+select.finput option{background:#071828;}
+textarea.finput{resize:vertical;min-height:80px;}
+
+/* MEAL CARD (Diet) */
+.meal-card{
+  background:var(--card);border:1px solid var(--card-b);
+  border-radius:14px;padding:16px;transition:all .3s;cursor:default;
+  position:relative;overflow:hidden;
+}
+.meal-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:opacity .3s;
+}
+.mc-breakfast::before{background:linear-gradient(90deg,var(--gold),var(--teal));}
+.mc-snack::before{background:linear-gradient(90deg,var(--red),var(--gold));}
+.mc-lunch::before{background:linear-gradient(90deg,var(--green),var(--cyan));}
+.mc-dinner::before{background:linear-gradient(90deg,var(--blue),var(--purple));}
+.meal-card:hover{transform:translateY(-3px);border-color:rgba(0,219,184,0.3);}
+.meal-card:hover::before{opacity:1;}
+.meal-emoji{font-size:26px;margin-bottom:7px;}
+.meal-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--teal);margin-bottom:4px;}
+.meal-name{font-size:13px;font-weight:700;margin-bottom:5px;}
+.meal-items{font-size:11px;color:var(--muted);line-height:1.7;}
+.meal-macros{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+.mac{font-size:10px;padding:3px 8px;border-radius:20px;}
+.mac-c{background:rgba(244,162,97,0.12);color:var(--gold);}
+.mac-p{background:rgba(0,219,184,0.12);color:var(--teal);}
+.mac-f{background:rgba(123,94,167,0.12);color:var(--purple);}
+.meal-kcal{font-size:10px;color:var(--teal);margin-top:7px;}
+
+/* CUSTOM MEAL (user-created) */
+.custom-meal{
+  background:rgba(0,219,184,0.05);border:1px solid rgba(0,219,184,0.2);
+  border-radius:12px;padding:14px;margin-bottom:10px;display:flex;
+  align-items:center;justify-content:space-between;gap:12px;transition:all .3s;
+}
+.custom-meal:hover{border-color:rgba(0,219,184,0.4);}
+.cm-info{flex:1;}
+.cm-name{font-size:14px;font-weight:600;}
+.cm-detail{font-size:11px;color:var(--muted);margin-top:2px;}
+.cm-time{font-family:'Space Mono',monospace;font-size:11px;color:var(--teal);}
+
+/* TIMELINE */
+.tl{position:relative;padding-left:26px;}
+.tl::before{content:'';position:absolute;left:7px;top:0;bottom:0;width:2px;background:linear-gradient(to bottom,var(--teal),transparent);}
+.tl-item{position:relative;margin-bottom:18px;}
+.tl-dot{position:absolute;left:-23px;top:3px;width:12px;height:12px;border-radius:50%;border:2px solid var(--teal);background:var(--bg);transition:all .3s;}
+.tl-item:hover .tl-dot{background:var(--teal);box-shadow:0 0 8px var(--teal);}
+.tl-time{font-family:'Space Mono',monospace;font-size:10px;color:var(--teal);}
+.tl-ti{font-size:13px;font-weight:600;margin:2px 0;}
+.tl-desc{font-size:11px;color:var(--muted);}
+
+/* RINGS */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.ring{position:relative;width:76px;height:76px;}
+.ring svg{transform:rotate(-90deg);}
+.ring circle{fill:none;stroke-width:7;transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1);}
+.ring-val{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;}
+.ring-lbl{font-size:10px;color:var(--muted);text-align:center;line-height:1.4;}
+
+/* GAUGE */
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:8px;}
+.gauge{position:relative;width:170px;height:85px;overflow:hidden;margin-bottom:8px;}
+.gauge-bg{width:170px;height:85px;border-radius:85px 85px 0 0;background:rgba(255,255,255,0.04);}
+.gauge-fill{
+  position:absolute;bottom:0;left:0;right:0;top:0;
+  border-radius:85px 85px 0 0;
+  clip-path:inset(0 0 0 0);
+  background:conic-gradient(var(--teal) 0deg,var(--teal) var(--a),transparent var(--a),transparent 180deg);
+  transition:--a 1.5s cubic-bezier(.4,0,.2,1);
+}
+.gauge-ctr{position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);text-align:center;}
+.gauge-val{font-family:'Space Mono',monospace;font-size:22px;font-weight:700;color:var(--teal);}
+.gauge-unit{font-size:10px;color:var(--muted);}
+.gauge-lbl{font-size:11px;color:var(--muted);text-align:center;margin-top:3px;}
+.gauge-status{font-size:13px;font-weight:600;margin-top:3px;}
+.gs-normal{color:var(--green);}
+.gs-high{color:var(--red);}
+.gs-low{color:var(--gold);}
+
+/* CHART */
+.chart-wrap{position:relative;height:200px;width:100%;}
+
+/* MODAL */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+  z-index:500;display:none;align-items:center;justify-content:center;padding:20px;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:#071828;border:1px solid var(--card-b);border-radius:20px;
+  padding:32px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+  animation:modalIn .35s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 24px 64px rgba(0,0,0,0.6),var(--glow);
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.9);}to{opacity:1;transform:scale(1);}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;}
+.modal-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;}
+.modal-close{width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.06);border:none;color:var(--muted);cursor:pointer;font-size:16px;transition:all .2s;}
+.modal-close:hover{background:rgba(230,57,70,0.15);color:var(--red);}
+
+/* FLOAT CLOCK */
+.float-clock{
+  position:fixed;bottom:22px;right:22px;
+  background:rgba(3,13,24,0.9);border:1px solid var(--card-b);
+  border-radius:13px;padding:10px 16px;backdrop-filter:blur(20px);z-index:50;text-align:center;
+}
+.clock-t{font-family:'Space Mono',monospace;font-size:20px;color:var(--teal);}
+.clock-d{font-size:9px;color:var(--muted);margin-top:1px;}
+
+/* TOAST */
+.toast{
+  position:fixed;top:22px;right:22px;z-index:999;
+  background:#071828;border:1px solid var(--card-b);border-radius:12px;
+  padding:14px 20px;font-size:13px;font-weight:600;color:var(--text);
+  box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  display:none;animation:toastIn .35s ease;max-width:320px;
+}
+@keyframes toastIn{from{opacity:0;transform:translateY(-16px);}to{opacity:1;transform:translateY(0);}}
+.toast.show{display:block;}
+.toast-icon{font-size:16px;margin-right:8px;}
+
+/* DIVIDER */
+.sdiv{display:flex;align-items:center;gap:10px;margin:18px 0 14px;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);}
+.sdiv::before,.sdiv::after{content:'';flex:1;height:1px;background:var(--card-b);}
+
+/* WELCOME BANNER */
+.welcome-banner{
+  background:linear-gradient(135deg,rgba(0,219,184,0.1),rgba(0,119,182,0.15));
+  border:1px solid rgba(0,219,184,0.2);border-radius:16px;padding:22px 26px;
+  margin-bottom:22px;display:flex;align-items:center;gap:20px;
+}
+.wb-icon{font-size:42px;flex-shrink:0;}
+.wb-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;}
+.wb-sub{font-size:13px;color:var(--muted);margin-top:3px;}
+
+/* TIPS */
+.tip{background:var(--card);border-left:3px solid var(--teal);border-radius:0 10px 10px 0;padding:12px 14px;margin-bottom:10px;transition:all .3s;}
+.tip:hover{background:rgba(0,219,184,0.07);transform:translateX(4px);}
+.tip-n{font-family:'Space Mono',monospace;font-size:9px;color:var(--teal);}
+.tip-t{font-size:12px;margin-top:2px;}
+
+/* =====================================================
+   MOBILE TOPBAR — hidden by default, shown by JS
+===================================================== */
+.mobile-topbar{
+  display:none; /* JS shows it on mobile when logged in */
+  position:fixed;top:0;left:0;right:0;z-index:9990;
+  height:56px;
+  background:rgba(3,13,24,0.98);
+  border-bottom:1px solid var(--card-b);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  align-items:center;justify-content:space-between;
+  padding:0 16px;
+}
+.mob-logo{font-family:'Fraunces',serif;font-size:17px;color:var(--teal);font-weight:900;}
+.mob-hamburger{
+  width:42px;height:42px;border-radius:12px;
+  border:1px solid rgba(0,219,184,0.25);
+  background:rgba(0,219,184,0.08);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  flex-shrink:0; -webkit-tap-highlight-color:transparent;
+}
+.mob-hamburger span{
+  display:block;width:20px;height:2px;background:var(--teal);
+  border-radius:2px;transition:all .28s ease;
+}
+.mob-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg);}
+.mob-hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0);}
+.mob-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg);}
+
+/* =====================================================
+   SIDEBAR DRAWER OVERLAY — pure JS controlled
+===================================================== */
+#sidebar-overlay{
+  display:none;
+  position:fixed;inset:0;
+  background:rgba(0,0,0,0.65);
+  z-index:9997;
+  cursor:pointer;
+}
+#sidebar-overlay.visible{display:block;}
+
+/* =====================================================
+   MOBILE BOTTOM NAV — hidden by default, shown by JS
+===================================================== */
+.mob-bottom-nav{
+  display:none; /* JS shows it on mobile when logged in */
+  position:fixed;bottom:0;left:0;right:0;z-index:9980;
+  background:rgba(3,13,24,0.98);
+  border-top:1px solid var(--card-b);
+  backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);
+  padding:4px 0 env(safe-area-inset-bottom,4px);
+  grid-template-columns:repeat(5,1fr);
+}
+.mbn-item{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:3px;padding:8px 4px;cursor:pointer;
+  font-size:10px;color:var(--muted);font-weight:600;
+  transition:color .2s;min-height:52px;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.mbn-item:active{opacity:.7;}
+.mbn-item.active{color:var(--teal);}
+.mbn-item i{font-size:19px;}
+.mbn-item.active i{text-shadow:0 0 10px rgba(0,219,184,0.5);}
+
+/* =====================================================
+   RESPONSIVE — tablet and mobile layout only
+   (sidebar itself is JS-controlled on mobile)
+===================================================== */
+@media(max-width:900px){
+  .g4{grid-template-columns:1fr 1fr;}
+  .g3{grid-template-columns:1fr 1fr;}
+}
+
+@media(max-width:768px){
+  /* Main shifts down/up for topbar and bottom nav */
+  .main{
+    margin-left:0 !important;
+    padding:70px 12px 78px !important;
+  }
+
+  /* All multi-col grids become single col */
+  .g4,.g3,.g2,.g12{grid-template-columns:1fr !important;}
+
+  /* Login card full width */
+  .login-card{padding:28px 18px 24px;border-radius:18px;margin:0 6px;}
+  .login-icon{width:58px;height:58px;font-size:26px;}
+  .login-brand{font-size:22px;}
+
+  /* Page headers stack */
+  .ph{flex-direction:column;align-items:flex-start;gap:10px;margin-bottom:18px;}
+  .ph-title{font-size:24px;}
+
+  /* Cards */
+  .card{padding:14px 12px;}
+  .stat{padding:14px;}
+  .stat-val{font-size:22px;}
+
+  /* Charts shorter */
+  .chart-wrap{height:170px !important;}
+
+  /* Tables scroll */
+  .stbl{min-width:520px;}
+  div[style*="overflow-x:auto"]{-webkit-overflow-scrolling:touch;}
+
+  /* Gauge smaller */
+  .gauge{width:140px;height:70px;}
+  .gauge-bg{width:140px;height:70px;border-radius:70px 70px 0 0;}
+  .gauge-val{font-size:18px;}
+
+  /* Modals slide up from bottom */
+  .modal-overlay.open{align-items:flex-end;padding:0;}
+  .modal{border-radius:20px 20px 0 0;max-height:90vh;padding:22px 16px;max-width:100%;}
+
+  /* Float clock hidden */
+  .float-clock{display:none !important;}
+
+  /* Welcome banner */
+  .welcome-banner{flex-direction:column;padding:14px;}
+
+  /* Meal grid */
+  div[style*="repeat(auto-fill"]{grid-template-columns:1fr !important;}
+
+  /* Water cups */
+  #water-cups-wrap > div{width:38px !important;height:50px !important;}
+
+  /* iOS input zoom fix */
+  .finput,.form-input{font-size:16px !important;}
+
+  /* Touch targets */
+  .btn{min-height:44px;}
+  .nav-item{padding:14px 16px;font-size:14px;}
+
+  /* Scrollbar */
+  ::-webkit-scrollbar{width:3px;}
+}
+
+@media(max-width:380px){
+  .main{padding:66px 10px 74px !important;}
+  .ph-title{font-size:20px;}
+  .stat-val{font-size:18px;}
+  .mbn-item{font-size:9px;}
+  .mbn-item i{font-size:17px;}
+}
+
+/* LOADING */
+.loading-overlay{
+  position:fixed;inset:0;background:var(--bg);z-index:999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+}
+.loading-overlay.hide{display:none;}
+.loader{
+  width:50px;height:50px;border-radius:50%;
+  border:3px solid rgba(0,219,184,0.2);border-top-color:var(--teal);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loading-text{font-size:14px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<!-- MOBILE TOPBAR (visible only on mobile) -->
+<div class="mobile-topbar" id="mobile-topbar">
+  <div class="mob-logo">💉 DiabeCare</div>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div id="mob-user-avatar" style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--blue));align-items:center;justify-content:center;font-size:12px;font-weight:700;display:none;">?</div>
+    <div class="mob-hamburger" id="mob-hamburger" onclick="toggleMobileSidebar()">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</div>
+
+<!-- SIDEBAR OVERLAY (mobile backdrop) -->
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="closeMobileSidebar()"></div>
+
+<!-- MOBILE BOTTOM NAV -->
+<div class="mob-bottom-nav" id="mob-bottom-nav">
+  <div class="mbn-item active" id="mbn-dashboard" onclick="mobileNav('dashboard','mbn-dashboard')">
+    <i class="fas fa-chart-pie"></i>Home
+  </div>
+  <div class="mbn-item" id="mbn-sugar" onclick="mobileNav('sugar-log','mbn-sugar')">
+    <i class="fas fa-tint"></i>Sugar
+  </div>
+  <div class="mbn-item" id="mbn-diet" onclick="mobileNav('diet-plan','mbn-diet')">
+    <i class="fas fa-utensils"></i>Diet
+  </div>
+  <div class="mbn-item" id="mbn-exercise" onclick="mobileNav('exercise','mbn-exercise')">
+    <i class="fas fa-running"></i>Exercise
+  </div>
+  <div class="mbn-item" id="mbn-profile" onclick="mobileNav('profile','mbn-profile')">
+    <i class="fas fa-user-circle"></i>Profile
+  </div>
+</div>
+
+<!-- LOADING -->
+<div class="loading-overlay" id="loading">
+  <div class="loader"></div>
+  <div class="loading-text">Loading DiabeCare Pro…</div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"><span class="toast-icon">✅</span><span id="toast-msg"></span></div>
+
+<!-- ============================================================
+     LOGIN SCREEN
+============================================================ -->
+<div class="screen" id="login-screen">
+<div class="login-card">
+  <div class="login-logo">
+    <div class="login-icon">💉</div>
+    <div class="login-brand">DiabeCare Pro</div>
+    <div class="login-tagline">Your personal diabetes management companion</div>
+  </div>
+
+  <div class="tab-switcher">
+    <button class="tab-btn active" id="tab-login" onclick="switchTab('login')">Sign In</button>
+    <button class="tab-btn" id="tab-register" onclick="switchTab('register')">Create Account</button>
+  </div>
+
+  <div id="login-error" class="login-error"><i class="fas fa-exclamation-circle"></i> <span id="login-error-msg"></span></div>
+  <div id="login-success" class="login-success"><i class="fas fa-check-circle"></i> <span id="login-success-msg"></span></div>
+
+  <!-- LOGIN FORM -->
+  <div id="form-login">
+    <button class="btn-google" onclick="googleSignIn()">
+      <svg class="google-icon" viewBox="0 0 48 48">
+        <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.2l6.8-6.8C35.9 2.5 30.3 0 24 0 14.7 0 6.8 5.5 2.9 13.5l7.9 6.1C12.5 13.3 17.8 9.5 24 9.5z"/>
+        <path fill="#4285F4" d="M46.5 24.5c0-1.7-.1-3.3-.4-4.9H24v9.3h12.7c-.6 2.9-2.3 5.4-4.8 7.1l7.7 6C43.4 38.5 46.5 31.9 46.5 24.5z"/>
+        <path fill="#FBBC05" d="M10.8 28.4A14.6 14.6 0 0 1 9.5 24c0-1.5.3-3 .7-4.4l-7.9-6.1A24 24 0 0 0 0 24c0 3.8.9 7.5 2.6 10.8l8.2-6.4z"/>
+        <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.7-6c-2.1 1.4-4.9 2.3-8.2 2.3-6.2 0-11.5-4.1-13.4-9.7l-8.2 6.4C6.9 42.6 14.8 48 24 48z"/>
+      </svg>
+      Continue with Google (Gmail)
+    </button>
+    <div class="divider">or sign in with email</div>
+    <label class="form-label">Gmail Address</label>
+    <input type="email" id="l-email" class="form-input" placeholder="yourname@gmail.com" oninput="clearLoginMsg()">
+    <label class="form-label">Password</label>
+    <input type="password" id="l-pass" class="form-input" placeholder="Enter your password" oninput="clearLoginMsg()">
+    <button class="btn-primary" onclick="doLogin()" style="margin-top:4px;">Sign In <i class="fas fa-arrow-right" style="margin-left:6px;"></i></button>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted);">Don't have an account? <span style="color:var(--teal);cursor:pointer;" onclick="switchTab('register')">Register here</span></div>
+  </div>
+
+  <!-- REGISTER FORM -->
+  <div id="form-register" style="display:none;">
+    <div class="g2" style="gap:12px;margin-bottom:0;">
+      <div>
+        <label class="form-label">First Name</label>
+        <input type="text" id="r-fname" class="form-input" placeholder="Ahmed">
+      </div>
+      <div>
+        <label class="form-label">Last Name</label>
+        <input type="text" id="r-lname" class="form-input" placeholder="Khan">
+      </div>
+    </div>
+    <label class="form-label">Gmail Address</label>
+    <input type="email" id="r-email" class="form-input" placeholder="yourname@gmail.com">
+    <label class="form-label">Password</label>
+    <input type="password" id="r-pass" class="form-input" placeholder="Min. 6 characters">
+    <div class="g2" style="gap:12px;margin-bottom:0;">
+      <div>
+        <label class="form-label">Age</label>
+        <input type="number" id="r-age" class="form-input" placeholder="e.g. 52" min="1" max="120">
+      </div>
+      <div>
+        <label class="form-label">Gender</label>
+        <select id="r-gender" class="form-input">
+          <option value="">Select</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+    </div>
+    <label class="form-label">Diabetes Type</label>
+    <select id="r-dtype" class="form-input">
+      <option value="">Select Type</option>
+      <option value="Type 1">Type 1 Diabetes</option>
+      <option value="Type 2">Type 2 Diabetes</option>
+      <option value="Gestational">Gestational Diabetes</option>
+      <option value="Prediabetes">Prediabetes</option>
+      <option value="LADA">LADA (Type 1.5)</option>
+    </select>
+    <label class="form-label">Doctor Name (optional)</label>
+    <input type="text" id="r-doc" class="form-input" placeholder="Dr. Rashid Ahmad">
+    <button class="btn-primary" onclick="doRegister()">Create My Account <i class="fas fa-user-plus" style="margin-left:6px;"></i></button>
+    <div style="text-align:center;margin-top:16px;font-size:12px;color:var(--muted);">Already have an account? <span style="color:var(--teal);cursor:pointer;" onclick="switchTab('login')">Sign in</span></div>
+  </div>
+</div>
+<div style="margin-top:16px;text-align:center;font-size:11px;color:rgba(107,154,176,0.65);max-width:460px;line-height:1.6;">
+  🔒 Your data is saved locally in this browser.<br>Use <strong style="color:rgba(0,219,184,0.7);">Backup Data</strong> (sidebar) to download a safe copy anytime.
+</div>
+</div>
+
+<!-- ============================================================
+     APP SCREEN
+============================================================ -->
+<div class="screen" id="app-screen">
+<div class="app-wrap">
+
+<!-- SIDEBAR -->
+<nav class="sidebar" id="sidebar">
+  <div class="sb-logo">
+    <div style="display:flex;align-items:center;justify-content:space-between;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,var(--teal),var(--blue));display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;">💉</div>
+        <div><div class="sb-brand">DiabeCare Pro</div><div class="sb-sub">YOUR HEALTH HUB</div></div>
+      </div>
+      <!-- Mobile close button — only visible on mobile -->
+      <button id="sb-close-btn" onclick="closeMobileSidebar()" style="display:none;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.12);color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0;align-items:center;justify-content:center;">✕</button>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="navGoto('dashboard',this)"><i class="fas fa-chart-pie"></i>Dashboard</div>
+    <div class="nav-item" onclick="navGoto('sugar-log',this)"><i class="fas fa-tint"></i>Sugar Log</div>
+    <div class="nav-section">Health Plan</div>
+    <div class="nav-item" onclick="navGoto('diet-plan',this)"><i class="fas fa-utensils"></i>Diet Plan</div>
+    <div class="nav-item" onclick="navGoto('insulin',this)"><i class="fas fa-syringe"></i>Insulin Timing</div>
+    <div class="nav-section">Lifestyle</div>
+    <div class="nav-item" onclick="navGoto('exercise',this)"><i class="fas fa-running"></i>Exercise</div>
+    <div class="nav-item" onclick="navGoto('water',this)"><i class="fas fa-water"></i>Water Intake</div>
+    <div class="nav-section">More</div>
+    <div class="nav-item" onclick="navGoto('tips',this)"><i class="fas fa-lightbulb"></i>Health Tips</div>
+    <div class="nav-item" onclick="navGoto('profile',this)"><i class="fas fa-user-circle"></i>My Profile</div>
+    <div class="nav-section">Account</div>
+    <div class="nav-item" onclick="closeMobileSidebar();doLogout();" style="color:var(--red);"><i class="fas fa-sign-out-alt"></i>Sign Out</div>
+    <div class="nav-item" onclick="closeMobileSidebar();exportData();" style="color:var(--gold);"><i class="fas fa-download"></i>Backup Data</div>
+    <div class="nav-item" onclick="closeMobileSidebar();document.getElementById('import-file').click();" style="color:var(--cyan);"><i class="fas fa-upload"></i>Restore Data</div>
+    <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importData(event)">
+  </div>
+  <div class="sb-user" onclick="navGoto('profile',null)">
+    <div class="sb-avatar" id="sb-avatar">?</div>
+    <div><div class="sb-name" id="sb-name">—</div><div class="sb-email" id="sb-email">—</div></div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ======== DASHBOARD ======== -->
+<div class="page active" id="page-dashboard">
+  <div class="ph">
+    <div>
+      <div class="ph-title" id="dash-greeting">Welcome <span>back!</span></div>
+      <div class="ph-sub">Here's your health snapshot for today</div>
+    </div>
+    <div style="font-size:12px;color:var(--muted);background:var(--card);border:1px solid var(--card-b);padding:8px 16px;border-radius:20px;" id="dash-date">—</div>
+  </div>
+
+  <div class="welcome-banner" id="dash-banner">
+    <div class="wb-icon">🩺</div>
+    <div>
+      <div class="wb-title" id="dash-welcome-name">Good morning!</div>
+      <div class="wb-sub" id="dash-diabetes-type">Managing your diabetes, one day at a time.</div>
+    </div>
+  </div>
+
+  <div class="alert alert-warn" id="dash-insulin-alert">
+    <i class="fas fa-exclamation-triangle"></i>
+    <div><div class="alert-t">Insulin Reminder</div><div class="alert-d" id="insulin-alert-text">Check your schedule</div></div>
+  </div>
+
+  <div class="g4" id="stat-grid">
+    <div class="stat">
+      <div class="stat-icon si-teal"><i class="fas fa-tint"></i></div>
+      <div class="stat-val" id="sv-sugar">—</div>
+      <div class="stat-lbl">Latest Sugar (mg/dL)</div>
+      <div class="stat-trend trend-ok" id="sv-sugar-t"><i class="fas fa-minus"></i> No reading today</div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon si-gold"><i class="fas fa-vial"></i></div>
+      <div class="stat-val" id="sv-readings">0</div>
+      <div class="stat-lbl">Total Readings Logged</div>
+      <div class="stat-trend trend-ok">All time</div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon si-green"><i class="fas fa-check-double"></i></div>
+      <div class="stat-val" id="sv-today-r">0</div>
+      <div class="stat-lbl">Readings Today</div>
+      <div class="stat-trend trend-ok">Target: 4+ per day</div>
+    </div>
+    <div class="stat">
+      <div class="stat-icon si-red"><i class="fas fa-heartbeat"></i></div>
+      <div class="stat-val" id="sv-avg">—</div>
+      <div class="stat-lbl">7-Day Average</div>
+      <div class="stat-trend trend-ok">mg/dL</div>
+    </div>
+  </div>
+
+  <div class="g12">
+    <div class="card">
+      <div class="card-title">Current Level</div>
+      <div class="gauge-wrap">
+        <div class="gauge">
+          <div class="gauge-bg">
+            <div class="gauge-fill" id="dash-gauge" style="--a:0deg;"></div>
+          </div>
+          <div class="gauge-ctr">
+            <div class="gauge-val" id="dash-gauge-val">—</div>
+            <div class="gauge-unit">mg/dL</div>
+          </div>
+        </div>
+        <div class="gauge-lbl">Fasting: 70–100 • Post-meal: &lt;140</div>
+        <div class="gauge-status gs-normal" id="dash-gauge-status">No reading logged yet</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">
+        <span style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(6,214,160,0.1);color:var(--green);">Normal 70–100</span>
+        <span style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(244,162,97,0.1);color:var(--gold);">Pre-diabetic 100–125</span>
+        <span style="font-size:10px;padding:3px 9px;border-radius:20px;background:rgba(230,57,70,0.1);color:var(--red);">Diabetic 126+</span>
+      </div>
+      <button class="btn btn-teal" style="width:100%;margin-top:14px;" onclick="navGoto('sugar-log',null);openAddModal();">
+        <i class="fas fa-plus"></i> Add Reading Now
+      </button>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div class="card-title">Recent Readings — Last 7 Days</div>
+      </div>
+      <div class="chart-wrap"><canvas id="dash-chart"></canvas></div>
+    </div>
+  </div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">Today's Goals</div>
+      <div style="display:flex;justify-content:space-around;">
+        <div class="ring-wrap">
+          <div class="ring"><svg viewBox="0 0 76 76" width="76" height="76">
+            <circle cx="38" cy="38" r="32" stroke="rgba(255,255,255,0.05)" stroke-width="7" fill="none"/>
+            <circle id="ring-w" cx="38" cy="38" r="32" stroke="var(--cyan)" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/></svg>
+            <div class="ring-val" id="ring-w-v" style="color:var(--cyan);">0%</div>
+          </div>
+          <div class="ring-lbl">Water<br><span id="ring-w-lbl">0/8</span></div>
+        </div>
+        <div class="ring-wrap">
+          <div class="ring"><svg viewBox="0 0 76 76" width="76" height="76">
+            <circle cx="38" cy="38" r="32" stroke="rgba(255,255,255,0.05)" stroke-width="7" fill="none"/>
+            <circle id="ring-r" cx="38" cy="38" r="32" stroke="var(--green)" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/></svg>
+            <div class="ring-val" id="ring-r-v" style="color:var(--green);">0%</div>
+          </div>
+          <div class="ring-lbl">Readings<br><span id="ring-r-lbl">0/4</span></div>
+        </div>
+        <div class="ring-wrap">
+          <div class="ring"><svg viewBox="0 0 76 76" width="76" height="76">
+            <circle cx="38" cy="38" r="32" stroke="rgba(255,255,255,0.05)" stroke-width="7" fill="none"/>
+            <circle id="ring-m" cx="38" cy="38" r="32" stroke="var(--gold)" stroke-width="7" fill="none" stroke-linecap="round" stroke-dasharray="201" stroke-dashoffset="201"/></svg>
+            <div class="ring-val" id="ring-m-v" style="color:var(--gold);">0%</div>
+          </div>
+          <div class="ring-lbl">Meals<br><span id="ring-m-lbl">0/3</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:10px;">Quick Actions</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <button class="btn btn-teal" onclick="navGoto('sugar-log',null);openAddModal();">
+          <i class="fas fa-tint"></i> Log Sugar
+        </button>
+        <button class="btn btn-outline" onclick="navGoto('diet-plan',null)">
+          <i class="fas fa-utensils"></i> View Diet
+        </button>
+        <button class="btn btn-gold" onclick="navGoto('water',null)">
+          <i class="fas fa-water"></i> Water Log
+        </button>
+        <button class="btn btn-outline" onclick="navGoto('tips',null)">
+          <i class="fas fa-lightbulb"></i> Health Tips
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== SUGAR LOG ======== -->
+<div class="page" id="page-sugar-log">
+  <div class="ph">
+    <div>
+      <div class="ph-title">Sugar <span>Log</span></div>
+      <div class="ph-sub">Track every blood glucose reading</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-outline" onclick="downloadPDF()" title="Download all readings as PDF">
+        <i class="fas fa-file-pdf" style="color:var(--red);"></i> Download PDF
+      </button>
+      <button class="btn btn-teal" onclick="openAddModal()"><i class="fas fa-plus"></i> Add Reading</button>
+    </div>
+  </div>
+
+  <div class="g4" style="margin-bottom:18px;">
+    <div class="card" style="text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">TOTAL READINGS</div>
+      <div style="font-family:'Space Mono',monospace;font-size:28px;color:var(--teal);" id="sl-total">0</div>
+    </div>
+    <div class="card" style="text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">TODAY'S READINGS</div>
+      <div style="font-family:'Space Mono',monospace;font-size:28px;color:var(--green);" id="sl-today">0</div>
+    </div>
+    <div class="card" style="text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">7-DAY AVERAGE</div>
+      <div style="font-family:'Space Mono',monospace;font-size:28px;color:var(--gold);" id="sl-avg">—</div>
+    </div>
+    <div class="card" style="text-align:center;padding:16px;">
+      <div style="font-size:10px;color:var(--muted);letter-spacing:1.5px;margin-bottom:6px;">HIGH READINGS</div>
+      <div style="font-family:'Space Mono',monospace;font-size:28px;color:var(--red);" id="sl-high">0</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <div class="card-title" style="margin-bottom:10px;">30-Day Glucose Trend</div>
+    <div class="chart-wrap"><canvas id="sl-chart"></canvas></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+      <div class="card-title" style="margin:0;">Reading History</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-xs btn-outline" onclick="filterSugar('all')">All</button>
+        <button class="btn btn-xs" style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.25);color:var(--red);" onclick="filterSugar('high')">High</button>
+        <button class="btn btn-xs" style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.25);color:var(--green);" onclick="filterSugar('normal')">Normal</button>
+        <button class="btn btn-xs" style="background:rgba(244,162,97,0.1);border:1px solid rgba(244,162,97,0.25);color:var(--gold);" onclick="filterSugar('low')">Low</button>
+        <button class="btn btn-xs btn-danger" onclick="clearAllReadings()"><i class="fas fa-trash"></i> Clear All</button>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="stbl" id="sugar-table">
+        <thead><tr>
+          <th>Date</th><th>Time</th><th>Level (mg/dL)</th><th>Type</th><th>Status</th><th>Notes</th><th>Action</th>
+        </tr></thead>
+        <tbody id="sugar-tbody"></tbody>
+      </table>
+      <div id="no-readings" style="text-align:center;padding:40px;color:var(--muted);display:none;">
+        <div style="font-size:36px;margin-bottom:10px;">📊</div>
+        <div>No readings yet. Add your first blood sugar reading!</div>
+        <button class="btn btn-teal" style="margin-top:14px;" onclick="openAddModal()"><i class="fas fa-plus"></i> Add First Reading</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== DIET PLAN ======== -->
+<div class="page" id="page-diet-plan">
+  <div class="ph">
+    <div>
+      <div class="ph-title">Diet <span>Plan</span></div>
+      <div class="ph-sub">Pre-built diabetic plan + your custom meals</div>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-teal" onclick="openMealModal()"><i class="fas fa-plus"></i> Add Custom Meal</button>
+    </div>
+  </div>
+
+  <!-- Diet Plan Tabs -->
+  <div style="display:flex;gap:0;margin-bottom:20px;background:rgba(255,255,255,0.03);border-radius:12px;padding:4px;border:1px solid var(--card-b);">
+    <button class="tab-btn active" id="dtab-preset" onclick="switchDietTab('preset')" style="flex:1;">📋 Standard Diabetic Plan</button>
+    <button class="tab-btn" id="dtab-custom" onclick="switchDietTab('custom')" style="flex:1;">✏️ My Custom Meals</button>
+  </div>
+
+  <!-- PRESET PLAN -->
+  <div id="diet-preset">
+    <div class="alert alert-info">
+      <i class="fas fa-leaf"></i>
+      <div><div class="alert-t">Diabetic-Friendly Meal Plan</div>
+      <div class="alert-d">Low Glycemic Index foods. Daily target: 1800 kcal | Carbs 45% | Protein 25% | Fat 30%</div></div>
+    </div>
+    <div class="sdiv">🌅 Daily Meal Schedule</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px;">
+      <div class="meal-card mc-breakfast">
+        <div class="meal-emoji">🥣</div>
+        <div class="meal-time">⏰ 7:30 AM — BREAKFAST</div>
+        <div class="meal-name">High-Fiber Breakfast Bowl</div>
+        <div class="meal-items">• Oats porridge (½ cup) with cinnamon<br>• 2 boiled eggs<br>• Low-fat milk (1 cup)<br>• Mixed nuts (10g)</div>
+        <div class="meal-macros"><span class="mac mac-c">Carbs 45g</span><span class="mac mac-p">Protein 18g</span><span class="mac mac-f">Fat 12g</span></div>
+        <div class="meal-kcal">~360 kcal • GI: Low ✓</div>
+      </div>
+      <div class="meal-card mc-snack">
+        <div class="meal-emoji">🍎</div>
+        <div class="meal-time">⏰ 10:30 AM — MORNING SNACK</div>
+        <div class="meal-name">Fruit & Nuts Snack</div>
+        <div class="meal-items">• 1 medium apple or pear<br>• Handful of walnuts (15g)<br>• Unsweetened green tea</div>
+        <div class="meal-macros"><span class="mac mac-c">Carbs 22g</span><span class="mac mac-p">Protein 4g</span><span class="mac mac-f">Fat 9g</span></div>
+        <div class="meal-kcal">~180 kcal • GI: Low ✓</div>
+      </div>
+      <div class="meal-card mc-lunch">
+        <div class="meal-emoji">🍛</div>
+        <div class="meal-time">⏰ 1:00 PM — LUNCH</div>
+        <div class="meal-name">Balanced Protein Lunch</div>
+        <div class="meal-items">• Brown rice (½ cup cooked)<br>• Grilled chicken breast (100g)<br>• Mixed vegetable salad<br>• Dal / lentil soup (½ cup)<br>• Cucumber raita</div>
+        <div class="meal-macros"><span class="mac mac-c">Carbs 55g</span><span class="mac mac-p">Protein 35g</span><span class="mac mac-f">Fat 14g</span></div>
+        <div class="meal-kcal">~480 kcal • GI: Medium</div>
+      </div>
+      <div class="meal-card mc-snack">
+        <div class="meal-emoji">🥜</div>
+        <div class="meal-time">⏰ 4:00 PM — AFTERNOON SNACK</div>
+        <div class="meal-name">Protein Snack</div>
+        <div class="meal-items">• Boiled chickpeas (½ cup)<br>• Cucumber & tomato slices<br>• Black pepper & lemon<br>• Herbal tea or water</div>
+        <div class="meal-macros"><span class="mac mac-c">Carbs 18g</span><span class="mac mac-p">Protein 8g</span><span class="mac mac-f">Fat 3g</span></div>
+        <div class="meal-kcal">~130 kcal • GI: Low ✓</div>
+      </div>
+      <div class="meal-card mc-dinner">
+        <div class="meal-emoji">🥗</div>
+        <div class="meal-time">⏰ 7:30 PM — DINNER</div>
+        <div class="meal-name">Light & Balanced Dinner</div>
+        <div class="meal-items">• 2 whole wheat chapati<br>• Grilled fish or chicken curry<br>• Steamed broccoli & spinach<br>• Tomato-onion salad</div>
+        <div class="meal-macros"><span class="mac mac-c">Carbs 50g</span><span class="mac mac-p">Protein 30g</span><span class="mac mac-f">Fat 16g</span></div>
+        <div class="meal-kcal">~440 kcal • GI: Medium</div>
+      </div>
+      <div class="meal-card mc-breakfast">
+        <div class="meal-emoji">🌙</div>
+        <div class="meal-time">⏰ 10:00 PM — BEDTIME SNACK</div>
+        <div class="meal-name">Light Bedtime Snack</div>
+        <div class="meal-items">• Low-fat yogurt (½ cup)<br>• Small handful of almonds<br>• Prevents overnight hypoglycemia</div>
+        <div class="meal-macros"><span class="mac mac-c">Carbs 12g</span><span class="mac mac-p">Protein 7g</span><span class="mac mac-f">Fat 5g</span></div>
+        <div class="meal-kcal">~120 kcal • GI: Low ✓</div>
+      </div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title" style="color:var(--red);margin-bottom:10px;">❌ Foods to Avoid</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;">
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">White rice (large portions)</span>
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">Sugary drinks & juices</span>
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">White bread & maida</span>
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">Deep-fried foods</span>
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">Sweets & desserts</span>
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">Processed snacks</span>
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">Alcohol</span>
+          <span style="background:rgba(230,57,70,0.1);border:1px solid rgba(230,57,70,0.2);color:var(--red);padding:4px 11px;border-radius:20px;font-size:11px;">Full-fat dairy</span>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--green);margin-bottom:10px;">✅ Encouraged Foods</div>
+        <div style="display:flex;flex-wrap:wrap;gap:7px;">
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Leafy greens</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Beans & lentils</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Whole grains</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Fatty fish</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Berries & citrus</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Nuts & seeds</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Eggs (moderate)</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Avocado</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Greek yogurt</span>
+          <span style="background:rgba(6,214,160,0.1);border:1px solid rgba(6,214,160,0.2);color:var(--green);padding:4px 11px;border-radius:20px;font-size:11px;">Sweet potato</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CUSTOM MEALS -->
+  <div id="diet-custom" style="display:none;">
+    <div class="alert alert-info">
+      <i class="fas fa-utensils"></i>
+      <div><div class="alert-t">Your Personal Meal Plans</div>
+      <div class="alert-d">Add your own meals, track macros, and build a plan that works for you.</div></div>
+    </div>
+    <div id="custom-meals-list"></div>
+    <div id="no-meals" style="text-align:center;padding:50px 20px;color:var(--muted);">
+      <div style="font-size:48px;margin-bottom:12px;">🥗</div>
+      <div style="font-size:16px;font-weight:600;margin-bottom:6px;">No custom meals yet</div>
+      <div style="font-size:13px;margin-bottom:18px;">Add your first meal to start building your personal diet plan</div>
+      <button class="btn btn-teal" onclick="openMealModal()"><i class="fas fa-plus"></i> Add My First Meal</button>
+    </div>
+  </div>
+</div>
+
+<!-- ======== INSULIN ======== -->
+<div class="page" id="page-insulin">
+  <div class="ph"><div>
+    <div class="ph-title">Insulin <span>Timing</span></div>
+    <div class="ph-sub">Your daily injection schedule</div>
+  </div></div>
+  <div class="alert alert-danger">
+    <i class="fas fa-exclamation-circle"></i>
+    <div><div class="alert-t">⚠️ Medical Advice Only</div>
+    <div class="alert-d">Never adjust insulin doses without your doctor's guidance. This schedule is for reference only.</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">💉 Rapid-Acting Insulin (Before Meals)</div>
+      <div class="tl">
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-time">7:00 AM</div><div class="tl-ti">Before Breakfast</div><div class="tl-desc">NovoRapid® (Aspart) — 8 units · Abdomen site · 10–15 min before eating</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-time">1:00 PM</div><div class="tl-ti">Before Lunch</div><div class="tl-desc">NovoRapid® (Aspart) — 6 units · Thigh site · 10–15 min before eating</div></div>
+        <div class="tl-item"><div class="tl-dot"></div><div class="tl-time">7:00 PM</div><div class="tl-ti">Before Dinner</div><div class="tl-desc">NovoRapid® (Aspart) — 6 units · Abdomen site · 10–15 min before eating</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px;">🩹 Long-Acting (Basal) Insulin</div>
+      <div style="background:rgba(123,94,167,0.1);border:1px solid rgba(123,94,167,0.25);border-radius:12px;padding:16px;margin-bottom:14px;">
+        <div style="font-size:10px;color:var(--purple);letter-spacing:1.5px;margin-bottom:4px;">BASAL INSULIN</div>
+        <div style="font-size:18px;font-weight:700;color:var(--purple);">Lantus® (Glargine) — 20 Units</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:6px;"><i class="fas fa-clock" style="margin-right:6px;"></i>10:00 PM — Every night at the SAME time</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:4px;">⚠️ Do NOT mix with other insulins. Never skip this dose.</div>
+      </div>
+      <div class="card-title" style="margin-bottom:10px;">📌 Injection Site Rotation</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <div style="background:rgba(0,219,184,0.08);border:1px solid rgba(0,219,184,0.2);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;">🫃</div><div style="font-size:11px;font-weight:600;margin-top:3px;">Abdomen</div><div style="font-size:9px;color:var(--teal);">Fastest absorption</div></div>
+        <div style="background:rgba(72,202,228,0.06);border:1px solid rgba(72,202,228,0.18);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;">🦵</div><div style="font-size:11px;font-weight:600;margin-top:3px;">Outer Thigh</div><div style="font-size:9px;color:var(--cyan);">Alternate site</div></div>
+        <div style="background:rgba(123,94,167,0.06);border:1px solid rgba(123,94,167,0.18);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;">💪</div><div style="font-size:11px;font-weight:600;margin-top:3px;">Upper Arm</div><div style="font-size:9px;color:var(--purple);">If help available</div></div>
+        <div style="background:rgba(244,162,97,0.06);border:1px solid rgba(244,162,97,0.18);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:20px;">🍑</div><div style="font-size:11px;font-weight:600;margin-top:3px;">Buttocks</div><div style="font-size:9px;color:var(--gold);">Slowest absorption</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== EXERCISE ======== -->
+<div class="page" id="page-exercise">
+  <div class="ph"><div><div class="ph-title">Exercise <span>Guide</span></div><div class="ph-sub">Physical activity improves insulin sensitivity</div></div></div>
+  <div class="alert alert-info"><i class="fas fa-info-circle"></i>
+    <div><div class="alert-t">Exercise & Blood Sugar</div><div class="alert-d">Check blood sugar before exercising. If below 100 mg/dL, eat a small snack first. Aim for 150+ minutes of moderate activity per week.</div></div>
+  </div>
+  <div class="g2">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px;">🏃 Recommended Activities</div>
+      <div style="display:flex;flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid var(--card-b);border-radius:12px;padding:12px;transition:all .3s;" onmouseover="this.style.borderColor='rgba(0,219,184,0.3)'" onmouseout="this.style.borderColor='var(--card-b)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(0,219,184,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🚶</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Brisk Walking</div><div style="font-size:11px;color:var(--muted);">30–45 min/day · Lowers blood sugar 20–50 mg/dL</div></div>
+          <div style="font-size:12px;color:var(--gold);font-weight:700;">~150 kcal</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid var(--card-b);border-radius:12px;padding:12px;transition:all .3s;" onmouseover="this.style.borderColor='rgba(0,219,184,0.3)'" onmouseout="this.style.borderColor='var(--card-b)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(72,202,228,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🏊</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Swimming</div><div style="font-size:11px;color:var(--muted);">30 min · Low-impact, excellent for blood sugar</div></div>
+          <div style="font-size:12px;color:var(--gold);font-weight:700;">~200 kcal</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid var(--card-b);border-radius:12px;padding:12px;transition:all .3s;" onmouseover="this.style.borderColor='rgba(0,219,184,0.3)'" onmouseout="this.style.borderColor='var(--card-b)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(123,94,167,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🧘</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Yoga / Stretching</div><div style="font-size:11px;color:var(--muted);">20–30 min · Reduces cortisol & stress-induced glucose</div></div>
+          <div style="font-size:12px;color:var(--gold);font-weight:700;">~80 kcal</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;background:rgba(255,255,255,0.03);border:1px solid var(--card-b);border-radius:12px;padding:12px;transition:all .3s;" onmouseover="this.style.borderColor='rgba(0,219,184,0.3)'" onmouseout="this.style.borderColor='var(--card-b)'">
+          <div style="width:40px;height:40px;border-radius:12px;background:rgba(244,162,97,0.1);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">🚴</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Cycling (Stationary)</div><div style="font-size:11px;color:var(--muted);">20–30 min · Cardio with joint safety</div></div>
+          <div style="font-size:12px;color:var(--gold);font-weight:700;">~180 kcal</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px;">⚠️ Safety Rules Before & After</div>
+      <div class="tip"><div class="tip-n">BEFORE EXERCISE</div><div class="tip-t">Check blood sugar. Below 100 mg/dL → eat 15g carbs first (banana, juice). Above 250 mg/dL → skip intense exercise.</div></div>
+      <div class="tip"><div class="tip-n">DURING EXERCISE</div><div class="tip-t">Carry fast-acting glucose (tablets or juice). Stop if you feel dizzy, shaky, or confused.</div></div>
+      <div class="tip"><div class="tip-n">AFTER EXERCISE</div><div class="tip-t">Check blood sugar again. Blood sugar can drop 4–8 hours after exercise (delayed hypoglycemia).</div></div>
+      <div class="tip"><div class="tip-n">HYDRATION</div><div class="tip-t">Drink water before, during, and after exercise. Dehydration raises blood sugar levels.</div></div>
+      <div class="tip" style="border-color:var(--gold);"><div class="tip-n">FOOT CARE</div><div class="tip-t">Wear proper footwear. Check feet before and after exercise for blisters or sores. Diabetic neuropathy may reduce sensation.</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== WATER ======== -->
+<div class="page" id="page-water">
+  <div class="ph"><div><div class="ph-title">Water <span>Intake</span></div><div class="ph-sub">Hydration helps kidneys flush excess glucose</div></div></div>
+  <div class="card" style="text-align:center;padding:36px;margin-bottom:18px;">
+    <div style="font-size:12px;color:var(--muted);letter-spacing:2px;margin-bottom:18px;">DAILY GOAL: 8 CUPS (2 LITERS)</div>
+    <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-bottom:24px;" id="water-cups-wrap"></div>
+    <div style="font-family:'Space Mono',monospace;font-size:56px;color:var(--cyan);line-height:1;" id="water-count-big">0</div>
+    <div style="color:var(--muted);font-size:13px;margin-top:6px;">cups today</div>
+    <div style="margin-top:20px;display:flex;gap:12px;justify-content:center;">
+      <button class="btn btn-teal" onclick="addWaterCup()"><i class="fas fa-plus"></i> Add Cup</button>
+      <button class="btn btn-outline" onclick="removeWaterCup()"><i class="fas fa-minus"></i> Remove</button>
+    </div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="card-title" style="margin-bottom:12px;">💧 Why It Matters for Diabetics</div>
+      <div class="tip"><div class="tip-n">GLUCOSE CLEARANCE</div><div class="tip-t">Helps kidneys flush excess glucose through urine, naturally lowering blood sugar.</div></div>
+      <div class="tip"><div class="tip-n">CONCENTRATION RISK</div><div class="tip-t">Dehydration makes blood more concentrated, raising glucose levels significantly.</div></div>
+      <div class="tip"><div class="tip-n">KIDNEY PROTECTION</div><div class="tip-t">Proper hydration supports kidney function — critical for diabetic patients.</div></div>
+    </div>
+    <div class="card"><div class="card-title" style="margin-bottom:10px;">Weekly Hydration</div><div class="chart-wrap" style="height:180px;"><canvas id="water-chart"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ======== TIPS ======== -->
+<div class="page" id="page-tips">
+  <div class="ph"><div><div class="ph-title">Health <span>Tips</span></div><div class="ph-sub">Evidence-based diabetes management advice</div></div></div>
+  <div class="g2">
+    <div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-title" style="color:var(--teal);margin-bottom:12px;">🩸 Blood Sugar Control</div>
+        <div class="tip"><div class="tip-n">TIP 01</div><div class="tip-t">Check blood sugar at consistent times: fasting, 2h after each meal, and bedtime.</div></div>
+        <div class="tip"><div class="tip-n">TIP 02</div><div class="tip-t">Stress raises blood sugar. Practice 5 minutes of deep breathing or meditation daily.</div></div>
+        <div class="tip"><div class="tip-n">TIP 03</div><div class="tip-t">Sleep 7–9 hours nightly. Poor sleep increases insulin resistance significantly.</div></div>
+        <div class="tip"><div class="tip-n">TIP 04</div><div class="tip-t">Always carry fast-acting sugar (juice, glucose tablets) for hypoglycemia.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--gold);margin-bottom:12px;">🍽️ Smart Eating</div>
+        <div class="tip" style="border-color:var(--gold);"><div class="tip-n">TIP 05</div><div class="tip-t">Eat vegetables first, then protein, then carbs. This order reduces post-meal glucose by up to 30%.</div></div>
+        <div class="tip" style="border-color:var(--gold);"><div class="tip-n">TIP 06</div><div class="tip-t">Eat smaller, more frequent meals. Large meals cause dangerous glucose spikes.</div></div>
+        <div class="tip" style="border-color:var(--gold);"><div class="tip-n">TIP 07</div><div class="tip-t">Add cinnamon to your diet — it has been shown to improve insulin sensitivity.</div></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:18px;">
+        <div class="card-title" style="color:var(--purple);margin-bottom:12px;">🏥 Medical Care</div>
+        <div class="tip" style="border-color:var(--purple);"><div class="tip-n">TIP 08</div><div class="tip-t">Get HbA1c tested every 3 months. Target below 7% for most Type 2 diabetics.</div></div>
+        <div class="tip" style="border-color:var(--purple);"><div class="tip-n">TIP 09</div><div class="tip-t">Annual eye, kidney, and foot exams are essential for detecting complications early.</div></div>
+        <div class="tip" style="border-color:var(--purple);"><div class="tip-n">TIP 10</div><div class="tip-t">Check feet daily for cuts, blisters, or redness. Neuropathy reduces sensation.</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="color:var(--red);margin-bottom:12px;">⚠️ Emergency Signs</div>
+        <div class="alert alert-danger" style="margin-bottom:8px;"><i class="fas fa-exclamation-circle"></i><div><div class="alert-t">Hypoglycemia &lt;70 mg/dL</div><div class="alert-d">Trembling, sweating, confusion. Eat 15g fast sugar immediately.</div></div></div>
+        <div class="alert alert-warn" style="margin-bottom:8px;"><i class="fas fa-exclamation-triangle"></i><div><div class="alert-t">Hyperglycemia &gt;250 mg/dL</div><div class="alert-d">Excessive thirst, frequent urination, blurred vision. Contact doctor.</div></div></div>
+        <div class="alert alert-danger"><i class="fas fa-ambulance"></i><div><div class="alert-t">DKA — Call Emergency Now</div><div class="alert-d">Fruity breath, nausea, vomiting, deep rapid breathing.</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ======== PROFILE ======== -->
+<div class="page" id="page-profile">
+  <div class="ph">
+    <div><div class="ph-title">My <span>Profile</span></div><div class="ph-sub">Your personal health info</div></div>
+    <button class="btn btn-outline" onclick="openProfileEdit()"><i class="fas fa-edit"></i> Edit Profile</button>
+  </div>
+  <div class="g2">
+    <div class="card" style="text-align:center;">
+      <!-- Profile picture with upload -->
+      <div style="position:relative;width:100px;height:100px;margin:0 auto 14px;">
+        <div id="p-avatar-big" style="width:100px;height:100px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--blue));display:flex;align-items:center;justify-content:center;font-size:34px;font-weight:700;box-shadow:0 0 0 4px rgba(0,219,184,0.2),0 0 0 8px rgba(0,219,184,0.08);overflow:hidden;">?</div>
+        <!-- Upload button overlay -->
+        <label for="pic-upload" style="position:absolute;bottom:2px;right:2px;width:30px;height:30px;border-radius:50%;background:var(--teal);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,0.4);transition:transform .2s;" title="Upload photo" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+          <i class="fas fa-camera" style="font-size:12px;color:#03111f;"></i>
+        </label>
+        <input type="file" id="pic-upload" accept="image/*" style="display:none;" onchange="uploadProfilePic(event)">
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:10px;">Tap 📷 to change photo</div>
+      <div style="font-family:'Fraunces',serif;font-size:22px;font-weight:700;" id="p-fullname">—</div>
+      <div style="display:inline-block;padding:4px 14px;border-radius:20px;background:rgba(0,219,184,0.1);border:1px solid rgba(0,219,184,0.25);font-size:12px;color:var(--teal);margin:8px 0;" id="p-dtype-badge">—</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;" id="p-email-show">—</div>
+      <div style="border-top:1px solid var(--card-b);padding-top:14px;text-align:left;">
+        <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px;"><i class="fas fa-calendar" style="width:13px;color:var(--teal)"></i> <strong style="color:var(--text);">Age:</strong> <span id="p-age">—</span></div>
+        <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px;"><i class="fas fa-venus-mars" style="width:13px;color:var(--teal)"></i> <strong style="color:var(--text);">Gender:</strong> <span id="p-gender">—</span></div>
+        <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);margin-bottom:7px;"><i class="fas fa-user-md" style="width:13px;color:var(--teal)"></i> <strong style="color:var(--text);">Doctor:</strong> <span id="p-doctor">Not set</span></div>
+        <div style="display:flex;gap:8px;align-items:center;font-size:12px;color:var(--muted);"><i class="fas fa-calendar-plus" style="width:13px;color:var(--teal)"></i> <strong style="color:var(--text);">Member since:</strong> <span id="p-since">—</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-title" style="margin-bottom:14px;">📊 My Statistics</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div style="background:rgba(0,219,184,0.06);border:1px solid rgba(0,219,184,0.15);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-family:'Space Mono',monospace;font-size:24px;color:var(--teal);" id="pst-total">0</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Total Readings</div>
+          </div>
+          <div style="background:rgba(6,214,160,0.06);border:1px solid rgba(6,214,160,0.15);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-family:'Space Mono',monospace;font-size:24px;color:var(--green);" id="pst-avg">—</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Avg Blood Sugar</div>
+          </div>
+          <div style="background:rgba(230,57,70,0.06);border:1px solid rgba(230,57,70,0.15);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-family:'Space Mono',monospace;font-size:24px;color:var(--red);" id="pst-high">0</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">High Readings</div>
+          </div>
+          <div style="background:rgba(244,162,97,0.06);border:1px solid rgba(244,162,97,0.15);border-radius:12px;padding:14px;text-align:center;">
+            <div style="font-family:'Space Mono',monospace;font-size:24px;color:var(--gold);" id="pst-meals">0</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:3px;">Custom Meals</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">⚠️ Change Password</div>
+        <div class="fgroup"><label class="flabel">New Password</label><input type="password" id="new-pass" class="finput" placeholder="Min. 6 characters"></div>
+        <div class="fgroup"><label class="flabel">Confirm Password</label><input type="password" id="conf-pass" class="finput" placeholder="Repeat password"></div>
+        <button class="btn btn-outline" onclick="changePassword()"><i class="fas fa-lock"></i> Update Password</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+</div>
+
+<!-- ============================================================
+     MODALS
+============================================================ -->
+
+<!-- Add Sugar Modal -->
+<div class="modal-overlay" id="modal-sugar">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🩸 Add Blood Sugar Reading</div>
+      <button class="modal-close" onclick="closeModal('modal-sugar')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Blood Sugar Level (mg/dL) *</label>
+      <input type="number" id="m-sugar" class="finput" placeholder="e.g. 126" min="20" max="800">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fgroup">
+        <label class="flabel">Date *</label>
+        <input type="date" id="m-date" class="finput">
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Time *</label>
+        <input type="time" id="m-time" class="finput">
+      </div>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Reading Type *</label>
+      <select id="m-type" class="finput">
+        <option value="Fasting">Fasting (Morning)</option>
+        <option value="Pre-Meal">Pre-Meal</option>
+        <option value="Post-Meal">Post-Meal (2hr after)</option>
+        <option value="Bedtime">Bedtime</option>
+        <option value="Random">Random</option>
+      </select>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Notes (optional)</label>
+      <input type="text" id="m-notes" class="finput" placeholder="e.g. After lunch walk, felt dizzy">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-teal" style="flex:1;" onclick="submitSugarReading()"><i class="fas fa-check"></i> Save Reading</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-sugar')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Meal Modal -->
+<div class="modal-overlay" id="modal-meal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">🥗 Add Custom Meal</div>
+      <button class="modal-close" onclick="closeModal('modal-meal')"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Meal Name *</label>
+      <input type="text" id="mm-name" class="finput" placeholder="e.g. My Morning Oatmeal">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fgroup">
+        <label class="flabel">Meal Type *</label>
+        <select id="mm-type" class="finput">
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+          <option value="Snack">Snack</option>
+          <option value="Bedtime">Bedtime Snack</option>
+        </select>
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Eating Time</label>
+        <input type="time" id="mm-time" class="finput">
+      </div>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Food Items *</label>
+      <textarea id="mm-items" class="finput" placeholder="List food items, one per line:&#10;• Oats 1 cup&#10;• Banana 1 medium&#10;• Low fat milk 1 cup"></textarea>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;">
+      <div class="fgroup">
+        <label class="flabel">Calories</label>
+        <input type="number" id="mm-cal" class="finput" placeholder="kcal">
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Carbs (g)</label>
+        <input type="number" id="mm-carbs" class="finput" placeholder="g">
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Protein (g)</label>
+        <input type="number" id="mm-prot" class="finput" placeholder="g">
+      </div>
+      <div class="fgroup">
+        <label class="flabel">Fat (g)</label>
+        <input type="number" id="mm-fat" class="finput" placeholder="g">
+      </div>
+    </div>
+    <div class="fgroup">
+      <label class="flabel">Notes / How it affects your sugar</label>
+      <input type="text" id="mm-notes" class="finput" placeholder="e.g. Sugar stays stable after this meal">
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px;">
+      <button class="btn btn-teal" style="flex:1;" onclick="submitMeal()"><i class="fas fa-plus"></i> Add Meal</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-meal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Profile Edit Modal -->
+<div class="modal-overlay" id="modal-profile">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">✏️ Edit Profile</div>
+      <button class="modal-close" onclick="closeModal('modal-profile')"><i class="fas fa-times"></i></button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fgroup"><label class="flabel">First Name</label><input type="text" id="pe-fname" class="finput"></div>
+      <div class="fgroup"><label class="flabel">Last Name</label><input type="text" id="pe-lname" class="finput"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="fgroup"><label class="flabel">Age</label><input type="number" id="pe-age" class="finput"></div>
+      <div class="fgroup"><label class="flabel">Gender</label><select id="pe-gender" class="finput"><option>Male</option><option>Female</option><option>Other</option></select></div>
+    </div>
+    <div class="fgroup"><label class="flabel">Diabetes Type</label>
+      <select id="pe-dtype" class="finput">
+        <option>Type 1</option><option>Type 2</option><option>Gestational</option><option>Prediabetes</option><option>LADA</option>
+      </select>
+    </div>
+    <div class="fgroup"><label class="flabel">Doctor Name</label><input type="text" id="pe-doc" class="finput"></div>
+    <div style="display:flex;gap:10px;margin-top:4px;">
+      <button class="btn btn-teal" style="flex:1;" onclick="saveProfile()"><i class="fas fa-check"></i> Save Changes</button>
+      <button class="btn btn-outline" onclick="closeModal('modal-profile')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CLOCK -->
+<div class="float-clock" id="float-clock" style="display:none;">
+  <div class="clock-t" id="clock">00:00</div>
+  <div class="clock-d" id="clock-d">—</div>
+</div>
+
+<script>
+// =============================================
+// DATA LAYER — Triple-redundancy storage
+// localStorage (primary) + cookies (backup) + sessionStorage (runtime)
+// This ensures data survives browser restarts, cache clears, file:// restrictions
+// =============================================
+const DB_KEY = 'diabecare_users_v2';
+const SESSION_KEY = 'diabecare_session_v2';
+const COOKIE_DB_KEY = 'dc_users';
+const COOKIE_SESSION_KEY = 'dc_session';
+
+/* ---- Cookie helpers (persists 365 days) ---- */
+function setCookie(name, value, days=365) {
+  try {
+    const exp = new Date(Date.now() + days*864e5).toUTCString();
+    // Split into chunks if data is large (cookies have 4KB limit per cookie)
+    const str = typeof value === 'string' ? value : JSON.stringify(value);
+    const chunks = str.match(/.{1,3800}/g) || [str];
+    // Clear old chunks first
+    for(let i=0;i<20;i++) document.cookie=`${name}_${i}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+    chunks.forEach((chunk,i)=>{
+      document.cookie=`${name}_${i}=${encodeURIComponent(chunk)};expires=${exp};path=/;SameSite=Lax`;
+    });
+    document.cookie=`${name}_count=${chunks.length};expires=${exp};path=/;SameSite=Lax`;
+  } catch(e) { /* silent fail */ }
+}
+
+function getCookie(name) {
+  try {
+    const countMatch = document.cookie.match(new RegExp(`${name}_count=([^;]+)`));
+    if(!countMatch) return null;
+    const count = parseInt(countMatch[1]);
+    let result = '';
+    for(let i=0;i<count;i++){
+      const m = document.cookie.match(new RegExp(`${name}_${i}=([^;]+)`));
+      if(m) result += decodeURIComponent(m[1]);
+    }
+    return result || null;
+  } catch(e) { return null; }
+}
+
+function clearCookie(name) {
+  for(let i=0;i<20;i++) document.cookie=`${name}_${i}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+  document.cookie=`${name}_count=0;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/`;
+}
+
+/* ---- Unified read: tries localStorage → cookies → sessionStorage ---- */
+function getAllUsers() {
+  let data = null;
+  // Try localStorage first
+  try { data = JSON.parse(localStorage.getItem(DB_KEY) || 'null'); } catch(e){}
+  // Fallback: cookies
+  if(!data) {
+    try { const c=getCookie(COOKIE_DB_KEY); if(c) data=JSON.parse(c); } catch(e){}
+  }
+  // Fallback: sessionStorage
+  if(!data) {
+    try { data = JSON.parse(sessionStorage.getItem(DB_KEY) || 'null'); } catch(e){}
+  }
+  return data || {};
+}
+
+/* ---- Unified write: saves to all three stores ---- */
+function saveAllUsers(u) {
+  const str = JSON.stringify(u);
+  try { localStorage.setItem(DB_KEY, str); } catch(e){}
+  try { sessionStorage.setItem(DB_KEY, str); } catch(e){}
+  try { setCookie(COOKIE_DB_KEY, str); } catch(e){}
+}
+
+function getUser(email) {
+  return getAllUsers()[email] || null;
+}
+
+function saveUser(email, data) {
+  const all = getAllUsers();
+  all[email] = data;
+  saveAllUsers(all);
+  // Also keep a per-user backup key for extra redundancy
+  const userStr = JSON.stringify(data);
+  const safeKey = 'dc_u_' + btoa(email).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+  try { localStorage.setItem(safeKey, userStr); } catch(e){}
+  try { sessionStorage.setItem(safeKey, userStr); } catch(e){}
+  try { setCookie(safeKey, userStr); } catch(e){}
+}
+
+/* ---- Session: localStorage + cookies ---- */
+function getSession() {
+  let s = null;
+  try { s = localStorage.getItem(SESSION_KEY); } catch(e){}
+  if(!s) { try { s = getCookie(COOKIE_SESSION_KEY); } catch(e){} }
+  if(!s) { try { s = sessionStorage.getItem(SESSION_KEY); } catch(e){} }
+  return s;
+}
+function setSession(email) {
+  try { localStorage.setItem(SESSION_KEY, email); } catch(e){}
+  try { sessionStorage.setItem(SESSION_KEY, email); } catch(e){}
+  try { setCookie(COOKIE_SESSION_KEY, email); } catch(e){}
+}
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch(e){}
+  try { sessionStorage.removeItem(SESSION_KEY); } catch(e){}
+  try { clearCookie(COOKIE_SESSION_KEY); } catch(e){}
+}
+
+/* ---- Recovery: try per-user backup key if main store lost the user ---- */
+function recoverUser(email) {
+  const safeKey = 'dc_u_' + btoa(email).replace(/[^a-zA-Z0-9]/g,'').slice(0,20);
+  let data = null;
+  try { data = JSON.parse(localStorage.getItem(safeKey)||'null'); } catch(e){}
+  if(!data) { try{ const c=getCookie(safeKey); if(c) data=JSON.parse(c); }catch(e){} }
+  if(!data) { try { data = JSON.parse(sessionStorage.getItem(safeKey)||'null'); } catch(e){} }
+  if(data) {
+    // Re-insert into main store
+    const all = getAllUsers();
+    all[email] = data;
+    saveAllUsers(all);
+  }
+  return data;
+}
+
+let currentUser = null; // { email, ...profile, readings:[], meals:[], water:0 }
+
+// =============================================
+// PARTICLES BACKGROUND
+// =============================================
+const canv = document.getElementById('bg-canvas');
+const ctx2 = canv.getContext('2d');
+canv.width = window.innerWidth; canv.height = window.innerHeight;
+window.addEventListener('resize', () => { canv.width = window.innerWidth; canv.height = window.innerHeight; });
+const pts = Array.from({length:55}, () => ({
+  x: Math.random()*canv.width, y: Math.random()*canv.height,
+  r: Math.random()*1.8+.4, dx:(Math.random()-.5)*.35, dy:(Math.random()-.5)*.35, o:Math.random()*.4+.1
+}));
+function drawPts() {
+  ctx2.clearRect(0,0,canv.width,canv.height);
+  pts.forEach(p => {
+    ctx2.beginPath(); ctx2.arc(p.x,p.y,p.r,0,Math.PI*2);
+    ctx2.fillStyle=`rgba(0,219,184,${p.o})`; ctx2.fill();
+    p.x+=p.dx; p.y+=p.dy;
+    if(p.x<0||p.x>canv.width) p.dx*=-1;
+    if(p.y<0||p.y>canv.height) p.dy*=-1;
+  });
+  for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++) {
+    const d=Math.hypot(pts[i].x-pts[j].x,pts[i].y-pts[j].y);
+    if(d<110){ ctx2.beginPath(); ctx2.moveTo(pts[i].x,pts[i].y); ctx2.lineTo(pts[j].x,pts[j].y);
+      ctx2.strokeStyle=`rgba(0,219,184,${0.07*(1-d/110)})`; ctx2.lineWidth=.5; ctx2.stroke(); }
+  }
+  requestAnimationFrame(drawPts);
+}
+drawPts();
+
+// =============================================
+// CLOCK
+// =============================================
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent = now.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+  document.getElementById('clock-d').textContent = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+}
+setInterval(updateClock, 1000); updateClock();
+
+// =============================================
+// TOAST
+// =============================================
+function showToast(msg, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.querySelector('.toast-icon').textContent = icon;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// =============================================
+// SCREEN MANAGEMENT
+// =============================================
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id + '-screen').classList.add('active');
+}
+
+// =============================================
+// LOGIN / REGISTER
+// =============================================
+function switchTab(tab) {
+  const isLogin = tab === 'login';
+  document.getElementById('tab-login').classList.toggle('active', isLogin);
+  document.getElementById('tab-register').classList.toggle('active', !isLogin);
+  document.getElementById('form-login').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('form-register').style.display = isLogin ? 'none' : 'block';
+  clearLoginMsg();
+}
+
+function showLoginError(msg) {
+  const e = document.getElementById('login-error');
+  document.getElementById('login-error-msg').textContent = msg;
+  e.style.display = 'flex'; e.style.gap = '8px';
+  document.getElementById('login-success').style.display = 'none';
+}
+function showLoginSuccess(msg) {
+  const e = document.getElementById('login-success');
+  document.getElementById('login-success-msg').textContent = msg;
+  e.style.display = 'flex'; e.style.gap = '8px';
+  document.getElementById('login-error').style.display = 'none';
+}
+function clearLoginMsg() {
+  document.getElementById('login-error').style.display = 'none';
+  document.getElementById('login-success').style.display = 'none';
+}
+
+function googleSignIn() {
+  const email = prompt('Enter your Gmail address to simulate Google Sign-In:');
+  if (!email) return;
+  if (!email.includes('@')) { showLoginError('Please enter a valid Gmail address.'); return; }
+  const emailL = email.toLowerCase().trim();
+  let user = getUser(emailL);
+  if (!user) {
+    const name = prompt('Welcome! What is your full name?') || 'New User';
+    user = {
+      email: emailL,
+      fname: name.split(' ')[0],
+      lname: name.split(' ').slice(1).join(' ') || '',
+      age: '', gender: '', dtype: 'Type 2', doctor: '',
+      password: '',
+      since: new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'}),
+      readings: [], meals: [], water: 0, waterWeek: [0,0,0,0,0,0,0]
+    };
+    saveUser(emailL, user);
+  }
+  setSession(emailL);
+  launchApp(user);
+}
+
+function doLogin() {
+  const email = document.getElementById('l-email').value.toLowerCase().trim();
+  const pass = document.getElementById('l-pass').value;
+  if (!email) { showLoginError('Please enter your Gmail address.'); return; }
+  if (!pass) { showLoginError('Please enter your password.'); return; }
+  const user = getUser(email);
+  if (!user) { showLoginError('No account found with this email. Please register first.'); return; }
+  if (user.password !== pass) { showLoginError('Incorrect password. Please try again.'); return; }
+  setSession(email);
+  launchApp(user);
+}
+
+function doRegister() {
+  const fname = document.getElementById('r-fname').value.trim();
+  const lname = document.getElementById('r-lname').value.trim();
+  const email = document.getElementById('r-email').value.toLowerCase().trim();
+  const pass = document.getElementById('r-pass').value;
+  const age = document.getElementById('r-age').value;
+  const gender = document.getElementById('r-gender').value;
+  const dtype = document.getElementById('r-dtype').value;
+  const doctor = document.getElementById('r-doc').value.trim();
+
+  if (!fname) { showLoginError('Please enter your first name.'); return; }
+  if (!email || !email.includes('@')) { showLoginError('Please enter a valid Gmail address.'); return; }
+  if (pass.length < 6) { showLoginError('Password must be at least 6 characters.'); return; }
+  if (!dtype) { showLoginError('Please select your diabetes type.'); return; }
+
+  if (getUser(email)) { showLoginError('An account with this email already exists. Please sign in.'); return; }
+
+  const user = {
+    email, fname, lname, age, gender, dtype, doctor, password: pass,
+    since: new Date().toLocaleDateString('en-US',{month:'short',year:'numeric'}),
+    readings: [], meals: [], water: 0, waterWeek: [0,0,0,0,0,0,0]
+  };
+  saveUser(email, user);
+  showLoginSuccess('Account created! Signing you in…');
+  setTimeout(() => { setSession(email); launchApp(user); }, 1000);
+}
+
+// =============================================
+// LAUNCH APP
+// =============================================
+let dashChart = null, slChart = null, waterChart = null;
+
+function launchApp(user) {
+  currentUser = user;
+  document.getElementById('loading').classList.remove('hide');
+  setTimeout(() => {
+    document.getElementById('loading').classList.add('hide');
+    showScreen('app');
+    applyMobileChrome();
+    populateSidebar();
+    renderDashboard();
+    renderSugarLog();
+    renderCustomMeals();
+    renderProfile();
+    renderWater();
+    initCharts();
+  }, 800);
+}
+
+function populateSidebar() {
+  const initials = ((currentUser.fname||'?')[0]+(currentUser.lname||'?')[0]).toUpperCase();
+  const sb_av = document.getElementById('sb-avatar');
+  if (currentUser.avatar) {
+    sb_av.innerHTML = `<img src="${currentUser.avatar}" style="width:36px;height:36px;border-radius:50%;object-fit:cover;">`;
+    sb_av.style.background = 'none';
+  } else {
+    sb_av.textContent = initials;
+    sb_av.style.background = '';
+  }
+  document.getElementById('sb-name').textContent  = (currentUser.fname + ' ' + currentUser.lname).trim() || 'User';
+  document.getElementById('sb-email').textContent = currentUser.email;
+}
+
+// =============================================
+// NAVIGATION
+// =============================================
+function gotoPage(id, navEl) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  if(navEl) {
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    navEl.classList.add('active');
+  }
+  if (id === 'dashboard') renderDashboard();
+  if (id === 'sugar-log') renderSugarLog();
+  if (id === 'profile') renderProfile();
+}
+
+// navGoto — used by sidebar items; always closes sidebar on mobile then navigates
+function navGoto(id, navEl) {
+  closeMobileSidebar();
+  // sync bottom nav
+  const map = {'dashboard':'mbn-dashboard','sugar-log':'mbn-sugar','diet-plan':'mbn-diet','exercise':'mbn-exercise','profile':'mbn-profile'};
+  document.querySelectorAll('.mbn-item').forEach(i=>i.classList.remove('active'));
+  if(map[id]) { const el=document.getElementById(map[id]); if(el) el.classList.add('active'); }
+  gotoPage(id, navEl);
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// =============================================
+// DASHBOARD
+// =============================================
+function renderDashboard() {
+  if (!currentUser) return;
+  const name = currentUser.fname || 'Friend';
+  const hour = new Date().getHours();
+  const greet = hour < 12 ? 'Good Morning' : hour < 17 ? 'Good Afternoon' : 'Good Evening';
+  document.getElementById('dash-greeting').innerHTML = `${greet}, <span>${name}!</span>`;
+  document.getElementById('dash-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  document.getElementById('dash-welcome-name').textContent = `${greet}, ${name}! 💙`;
+  document.getElementById('dash-diabetes-type').textContent = `${currentUser.dtype||'Type 2'} Diabetes — Managing your health, one day at a time.`;
+
+  const readings = currentUser.readings || [];
+  const today = new Date().toISOString().split('T')[0];
+  const todayR = readings.filter(r => r.date === today);
+  const last7 = readings.filter(r => {
+    const d = new Date(r.date); const diff = (new Date()-d)/(1000*60*60*24);
+    return diff <= 7;
+  });
+  const latest = readings.length ? readings[readings.length-1] : null;
+  const avg7 = last7.length ? Math.round(last7.reduce((a,r)=>a+r.level,0)/last7.length) : null;
+  const highCount = readings.filter(r=>r.level>=126).length;
+
+  document.getElementById('sv-sugar').textContent = latest ? latest.level : '—';
+  document.getElementById('sv-readings').textContent = readings.length;
+  document.getElementById('sv-today-r').textContent = todayR.length;
+  document.getElementById('sv-avg').textContent = avg7 || '—';
+  document.getElementById('sl-total').textContent = readings.length;
+  document.getElementById('sl-today').textContent = todayR.length;
+  document.getElementById('sl-avg').textContent = avg7 || '—';
+  document.getElementById('sl-high').textContent = highCount;
+
+  // Gauge
+  if (latest) {
+    const ang = Math.min(latest.level/300,1)*180;
+    document.getElementById('dash-gauge').style.setProperty('--a', ang+'deg');
+    document.getElementById('dash-gauge-val').textContent = latest.level;
+    const st = document.getElementById('dash-gauge-status');
+    if(latest.level<70){st.textContent='● Low (Hypoglycemia)';st.className='gauge-status gs-low';}
+    else if(latest.level<=100){st.textContent='● Normal Range';st.className='gauge-status gs-normal';}
+    else if(latest.level<=125){st.textContent='● Pre-diabetic';st.className='gauge-status gs-low';}
+    else{st.textContent='● Diabetic Range';st.className='gauge-status gs-high';}
+  }
+
+  // Rings
+  const waterPct = Math.min((currentUser.water||0)/8*100,100);
+  const readPct = Math.min(todayR.length/4*100,100);
+  setRing('ring-w', waterPct, 'ring-w-v', 'ring-w-lbl', `${currentUser.water||0}/8`);
+  setRing('ring-r', readPct, 'ring-r-v', 'ring-r-lbl', `${todayR.length}/4`);
+  setRing('ring-m', 66, 'ring-m-v', 'ring-m-lbl', '2/3');
+
+  // Insulin alert
+  const h = new Date().getHours();
+  let alertMsg = '';
+  if(h>=6&&h<7) alertMsg='Morning insulin (Aspart 8U) due soon at 7:00 AM!';
+  else if(h>=12&&h<13) alertMsg='Lunch insulin (Aspart 6U) due soon at 1:00 PM!';
+  else if(h>=18&&h<19) alertMsg='Dinner insulin (Aspart 6U) due soon at 7:00 PM!';
+  else if(h>=21&&h<22) alertMsg='Basal insulin (Glargine 20U) due at 10:00 PM tonight!';
+  else alertMsg='Next dose: Check your insulin schedule for today.';
+  document.getElementById('insulin-alert-text').textContent = alertMsg;
+
+  // Trend alert text
+  if(latest && latest.level>=126) {
+    document.getElementById('sv-sugar-t').innerHTML='<i class="fas fa-arrow-up"></i> High — Log another reading';
+    document.getElementById('sv-sugar-t').className='stat-trend trend-up';
+  } else if(latest && latest.level<70) {
+    document.getElementById('sv-sugar-t').innerHTML='<i class="fas fa-exclamation-triangle"></i> Low — Eat something now!';
+    document.getElementById('sv-sugar-t').className='stat-trend trend-up';
+  } else if(latest) {
+    document.getElementById('sv-sugar-t').innerHTML='<i class="fas fa-check"></i> Normal Range';
+    document.getElementById('sv-sugar-t').className='stat-trend trend-dn';
+  }
+
+  updateDashChart();
+}
+
+function setRing(id, pct, valId, lblId, lbl) {
+  const circle = document.getElementById(id);
+  const total = 201;
+  setTimeout(() => {
+    circle.style.strokeDashoffset = total*(1-pct/100);
+    document.getElementById(valId).textContent = Math.round(pct)+'%';
+    if(lblId) document.getElementById(lblId).textContent = lbl;
+  }, 300);
+}
+
+// =============================================
+// CHARTS
+// =============================================
+Chart.defaults.color = '#6b9ab0';
+Chart.defaults.font.family = "'DM Sans',sans-serif";
+const cOpt = {
+  plugins:{legend:{display:false},tooltip:{backgroundColor:'rgba(3,13,24,0.95)',borderColor:'rgba(0,219,184,0.3)',borderWidth:1,padding:12,titleColor:'#e8f4f8',bodyColor:'#6b9ab0'}},
+  scales:{x:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{size:10}}},y:{grid:{color:'rgba(255,255,255,0.03)'},ticks:{font:{size:10}}}}
+};
+
+function initCharts() {
+  // Dash chart
+  const dc = document.getElementById('dash-chart');
+  if(dc) {
+    if(dashChart) dashChart.destroy();
+    dashChart = new Chart(dc.getContext('2d'),{
+      type:'line',data:{labels:[],datasets:[{label:'Blood Sugar',data:[],borderColor:'var(--teal)',backgroundColor:'rgba(0,219,184,0.07)',fill:true,tension:.4,pointRadius:4,pointBackgroundColor:'var(--teal)'}]},
+      options:{...cOpt}
+    });
+    updateDashChart();
+  }
+  // Sugar log chart
+  const sc = document.getElementById('sl-chart');
+  if(sc) {
+    if(slChart) slChart.destroy();
+    slChart = new Chart(sc.getContext('2d'),{
+      type:'line',data:{labels:[],datasets:[{label:'Blood Sugar',data:[],borderColor:'var(--cyan)',backgroundColor:'rgba(72,202,228,0.07)',fill:true,tension:.3,pointRadius:3,pointBackgroundColor:'var(--cyan)'}]},
+      options:{...cOpt}
+    });
+    updateSLChart();
+  }
+  // Water chart
+  const wc = document.getElementById('water-chart');
+  if(wc) {
+    if(waterChart) waterChart.destroy();
+    waterChart = new Chart(wc.getContext('2d'),{
+      type:'bar',data:{
+        labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],
+        datasets:[{data:currentUser.waterWeek||[0,0,0,0,0,0,0],backgroundColor:'rgba(72,202,228,0.18)',borderColor:'var(--cyan)',borderWidth:1,borderRadius:6}]
+      },
+      options:{...cOpt,scales:{...cOpt.scales,y:{...cOpt.scales.y,max:10}}}
+    });
+  }
+}
+
+function updateDashChart() {
+  if(!dashChart||!currentUser) return;
+  const r = [...(currentUser.readings||[])].slice(-14);
+  dashChart.data.labels = r.map(x=>{const d=new Date(x.date+' '+x.time);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});});
+  dashChart.data.datasets[0].data = r.map(x=>x.level);
+  dashChart.update();
+}
+
+function updateSLChart() {
+  if(!slChart||!currentUser) return;
+  const r = [...(currentUser.readings||[])].slice(-30);
+  slChart.data.labels = r.map(x=>{const d=new Date(x.date+' '+x.time);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});});
+  slChart.data.datasets[0].data = r.map(x=>x.level);
+  slChart.update();
+}
+
+// =============================================
+// SUGAR LOG
+// =============================================
+let sugarFilter = 'all';
+
+function openAddModal() {
+  const now = new Date();
+  document.getElementById('m-date').value = now.toISOString().split('T')[0];
+  document.getElementById('m-time').value = now.toTimeString().slice(0,5);
+  document.getElementById('m-sugar').value = '';
+  document.getElementById('m-notes').value = '';
+  document.getElementById('modal-sugar').classList.add('open');
+}
+
+function submitSugarReading() {
+  const level = parseInt(document.getElementById('m-sugar').value);
+  const date = document.getElementById('m-date').value;
+  const time = document.getElementById('m-time').value;
+  const type = document.getElementById('m-type').value;
+  const notes = document.getElementById('m-notes').value.trim();
+
+  if(!level||level<20||level>800) { showToast('Enter a valid blood sugar level (20–800 mg/dL)','⚠️'); return; }
+  if(!date||!time) { showToast('Please select date and time','⚠️'); return; }
+
+  const status = level<70 ? 'low' : level<=125 ? 'normal' : 'high';
+  const reading = { id: Date.now(), date, time, level, type, status, notes };
+  currentUser.readings.push(reading);
+  saveUser(currentUser.email, currentUser);
+
+  closeModal('modal-sugar');
+  renderSugarLog();
+  renderDashboard();
+  updateDashChart();
+  updateSLChart();
+
+  const msg = level<70 ? '⚠️ Low sugar logged! Eat 15g carbs now.' : level>180 ? '⚠️ High sugar logged! Monitor closely.' : '✅ Reading saved!';
+  showToast(msg, level<70||level>180 ? '⚠️' : '✅');
+}
+
+function renderSugarLog() {
+  if(!currentUser) return;
+  const readings = currentUser.readings || [];
+  const today = new Date().toISOString().split('T')[0];
+  const todayR = readings.filter(r=>r.date===today);
+  const last7 = readings.filter(r=>{ const d=new Date(r.date); return (new Date()-d)/(864e5)<=7; });
+  const avg = last7.length ? Math.round(last7.reduce((a,r)=>a+r.level,0)/last7.length) : null;
+
+  document.getElementById('sl-total').textContent = readings.length;
+  document.getElementById('sl-today').textContent = todayR.length;
+  document.getElementById('sl-avg').textContent = avg || '—';
+  document.getElementById('sl-high').textContent = readings.filter(r=>r.level>=126).length;
+
+  let filtered = [...readings].reverse();
+  if(sugarFilter==='high') filtered = filtered.filter(r=>r.status==='high');
+  if(sugarFilter==='normal') filtered = filtered.filter(r=>r.status==='normal');
+  if(sugarFilter==='low') filtered = filtered.filter(r=>r.status==='low');
+
+  const tbody = document.getElementById('sugar-tbody');
+  const noR = document.getElementById('no-readings');
+
+  if(readings.length===0) {
+    tbody.innerHTML=''; noR.style.display='block';
+  } else {
+    noR.style.display='none';
+    tbody.innerHTML = filtered.map(r=>`
+      <tr>
+        <td><span style="font-size:12px;">${new Date(r.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})}</span></td>
+        <td><span style="font-family:'Space Mono',monospace;font-size:11px;">${r.time}</span></td>
+        <td><strong style="font-family:'Space Mono',monospace;font-size:16px;color:${r.status==='high'?'var(--red)':r.status==='low'?'var(--gold)':'var(--green)'};">${r.level}</strong></td>
+        <td><span style="font-size:11px;color:var(--muted);">${r.type}</span></td>
+        <td><span class="badge ${r.status==='high'?'b-high':r.status==='low'?'b-low':'b-normal'}">${r.status==='high'?'High':r.status==='low'?'Low':'Normal'}</span></td>
+        <td><span style="font-size:11px;color:var(--muted);">${r.notes||'—'}</span></td>
+        <td><button class="btn btn-danger btn-xs" onclick="deleteReading(${r.id})"><i class="fas fa-trash"></i></button></td>
+      </tr>
+    `).join('');
+  }
+  updateSLChart();
+}
+
+function deleteReading(id) {
+  currentUser.readings = currentUser.readings.filter(r=>r.id!==id);
+  saveUser(currentUser.email, currentUser);
+  renderSugarLog();
+  renderDashboard();
+  showToast('Reading deleted', '🗑️');
+}
+
+function clearAllReadings() {
+  if(!confirm('Delete ALL your blood sugar readings? This cannot be undone.')) return;
+  currentUser.readings = [];
+  saveUser(currentUser.email, currentUser);
+  renderSugarLog();
+  renderDashboard();
+  showToast('All readings cleared', '🗑️');
+}
+
+function filterSugar(f) {
+  sugarFilter = f;
+  renderSugarLog();
+}
+
+// =============================================
+// DIET / CUSTOM MEALS
+// =============================================
+function switchDietTab(tab) {
+  document.getElementById('dtab-preset').classList.toggle('active', tab==='preset');
+  document.getElementById('dtab-custom').classList.toggle('active', tab==='custom');
+  document.getElementById('diet-preset').style.display = tab==='preset'?'block':'none';
+  document.getElementById('diet-custom').style.display = tab==='custom'?'block':'none';
+}
+
+function openMealModal() {
+  document.getElementById('mm-name').value='';
+  document.getElementById('mm-items').value='';
+  document.getElementById('mm-cal').value='';
+  document.getElementById('mm-carbs').value='';
+  document.getElementById('mm-prot').value='';
+  document.getElementById('mm-fat').value='';
+  document.getElementById('mm-notes').value='';
+  const now = new Date();
+  document.getElementById('mm-time').value = now.toTimeString().slice(0,5);
+  document.getElementById('modal-meal').classList.add('open');
+  switchDietTab('custom');
+}
+
+function submitMeal() {
+  const name = document.getElementById('mm-name').value.trim();
+  const type = document.getElementById('mm-type').value;
+  const time = document.getElementById('mm-time').value;
+  const items = document.getElementById('mm-items').value.trim();
+  if(!name||!items) { showToast('Please enter meal name and food items','⚠️'); return; }
+  const meal = {
+    id: Date.now(), name, type, time, items,
+    cal: document.getElementById('mm-cal').value||'',
+    carbs: document.getElementById('mm-carbs').value||'',
+    prot: document.getElementById('mm-prot').value||'',
+    fat: document.getElementById('mm-fat').value||'',
+    notes: document.getElementById('mm-notes').value.trim(),
+    date: new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'})
+  };
+  if(!currentUser.meals) currentUser.meals=[];
+  currentUser.meals.push(meal);
+  saveUser(currentUser.email, currentUser);
+  closeModal('modal-meal');
+  renderCustomMeals();
+  renderProfile();
+  showToast('Custom meal added to your plan! 🥗');
+}
+
+function renderCustomMeals() {
+  if(!currentUser) return;
+  const meals = currentUser.meals||[];
+  const container = document.getElementById('custom-meals-list');
+  const noMeals = document.getElementById('no-meals');
+
+  if(meals.length===0) {
+    container.innerHTML=''; noMeals.style.display='block';
+  } else {
+    noMeals.style.display='none';
+    const typeColors = {Breakfast:'var(--gold)',Lunch:'var(--green)',Dinner:'var(--blue)',Snack:'var(--red)',Bedtime:'var(--purple)'};
+    const typeEmoji = {Breakfast:'🌅',Lunch:'☀️',Dinner:'🌙',Snack:'🍎',Bedtime:'😴'};
+    container.innerHTML = `
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px;">${meals.length} meal${meals.length!==1?'s':''} in your personal plan</div>
+      ${[...meals].reverse().map(m=>`
+        <div class="custom-meal">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,219,184,0.1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${typeEmoji[m.type]||'🍽️'}</div>
+          <div class="cm-info">
+            <div class="cm-name">${m.name}</div>
+            <div class="cm-detail">${m.type}${m.time?' • '+m.time:''} • Added ${m.date}</div>
+            <div class="cm-detail" style="margin-top:3px;white-space:pre-line;line-height:1.5;">${m.items}</div>
+            ${m.cal||m.carbs||m.prot||m.fat ? `<div class="meal-macros" style="margin-top:7px;">
+              ${m.cal?`<span class="mac mac-c">${m.cal} kcal</span>`:''}
+              ${m.carbs?`<span class="mac mac-c">Carbs ${m.carbs}g</span>`:''}
+              ${m.prot?`<span class="mac mac-p">Protein ${m.prot}g</span>`:''}
+              ${m.fat?`<span class="mac mac-f">Fat ${m.fat}g</span>`:''}
+            </div>`:''}
+            ${m.notes?`<div style="font-size:11px;color:var(--teal);margin-top:5px;">💬 ${m.notes}</div>`:''}
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+            <span style="font-size:10px;padding:4px 10px;border-radius:20px;background:rgba(0,219,184,0.08);color:${typeColors[m.type]||'var(--teal)'};border:1px solid ${typeColors[m.type]||'var(--teal)'}44;">${m.type}</span>
+            <button class="btn btn-danger btn-xs" onclick="deleteMeal(${m.id})"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  }
+}
+
+function deleteMeal(id) {
+  currentUser.meals = (currentUser.meals||[]).filter(m=>m.id!==id);
+  saveUser(currentUser.email, currentUser);
+  renderCustomMeals();
+  renderProfile();
+  showToast('Meal removed from your plan', '🗑️');
+}
+
+// =============================================
+// WATER TRACKER
+// =============================================
+function renderWater() {
+  if(!currentUser) return;
+  const cups = currentUser.water||0;
+  document.getElementById('water-count-big').textContent = cups;
+  const wrap = document.getElementById('water-cups-wrap');
+  wrap.innerHTML='';
+  for(let i=0;i<8;i++){
+    const cup = document.createElement('div');
+    cup.style.cssText=`width:46px;height:58px;border-radius:4px 4px 10px 10px;border:2px solid rgba(72,202,228,${i<cups?'.6':'.2'});position:relative;cursor:pointer;transition:all .3s;overflow:hidden;`;
+    cup.innerHTML=`<div style="position:absolute;bottom:0;left:0;right:0;height:${i<cups?'100':'0'}%;background:linear-gradient(to top,var(--cyan),rgba(72,202,228,.4));transition:height .5s;"></div><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);font-size:20px;z-index:1;">💧</div>`;
+    cup.onclick=()=>{ currentUser.water=i<cups?i:i+1; saveUser(currentUser.email,currentUser); renderWater(); renderDashboard(); };
+    cup.onmouseover=()=>cup.style.transform='translateY(-4px)';
+    cup.onmouseout=()=>cup.style.transform='';
+    wrap.appendChild(cup);
+  }
+}
+function addWaterCup(){ if((currentUser.water||0)<8){currentUser.water=(currentUser.water||0)+1;saveUser(currentUser.email,currentUser);renderWater();renderDashboard();} }
+function removeWaterCup(){ if((currentUser.water||0)>0){currentUser.water=(currentUser.water||0)-1;saveUser(currentUser.email,currentUser);renderWater();renderDashboard();} }
+
+// =============================================
+// PROFILE
+// =============================================
+function renderProfile() {
+  if(!currentUser) return;
+  const initials = ((currentUser.fname||'?')[0]+(currentUser.lname||'?')[0]).toUpperCase();
+  const bigAv = document.getElementById('p-avatar-big');
+  if (currentUser.avatar) {
+    bigAv.innerHTML = `<img src="${currentUser.avatar}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
+    bigAv.style.fontSize = '0';
+  } else {
+    bigAv.innerHTML = initials;
+    bigAv.style.fontSize = '34px';
+  }
+  document.getElementById('p-fullname').textContent = (currentUser.fname+' '+currentUser.lname).trim()||'—';
+  document.getElementById('p-dtype-badge').textContent = (currentUser.dtype||'—')+' Diabetes';
+  document.getElementById('p-email-show').textContent = currentUser.email;
+  document.getElementById('p-age').textContent = currentUser.age ? currentUser.age+' years' : 'Not set';
+  document.getElementById('p-gender').textContent = currentUser.gender || 'Not set';
+  document.getElementById('p-doctor').textContent = currentUser.doctor || 'Not set';
+  document.getElementById('p-since').textContent = currentUser.since || '—';
+
+  const r = currentUser.readings||[];
+  const avg = r.length ? Math.round(r.reduce((a,x)=>a+x.level,0)/r.length) : null;
+  document.getElementById('pst-total').textContent = r.length;
+  document.getElementById('pst-avg').textContent = avg ? avg+' mg/dL' : '—';
+  document.getElementById('pst-high').textContent = r.filter(x=>x.level>=126).length;
+  document.getElementById('pst-meals').textContent = (currentUser.meals||[]).length;
+}
+
+function openProfileEdit() {
+  document.getElementById('pe-fname').value = currentUser.fname||'';
+  document.getElementById('pe-lname').value = currentUser.lname||'';
+  document.getElementById('pe-age').value = currentUser.age||'';
+  document.getElementById('pe-gender').value = currentUser.gender||'Male';
+  document.getElementById('pe-dtype').value = currentUser.dtype||'Type 2';
+  document.getElementById('pe-doc').value = currentUser.doctor||'';
+  document.getElementById('modal-profile').classList.add('open');
+}
+
+function saveProfile() {
+  currentUser.fname = document.getElementById('pe-fname').value.trim();
+  currentUser.lname = document.getElementById('pe-lname').value.trim();
+  currentUser.age = document.getElementById('pe-age').value;
+  currentUser.gender = document.getElementById('pe-gender').value;
+  currentUser.dtype = document.getElementById('pe-dtype').value;
+  currentUser.doctor = document.getElementById('pe-doc').value.trim();
+  saveUser(currentUser.email, currentUser);
+  closeModal('modal-profile');
+  populateSidebar();
+  renderProfile();
+  renderDashboard();
+  showToast('Profile updated successfully! 👤');
+}
+
+function changePassword() {
+  const np = document.getElementById('new-pass').value;
+  const cp = document.getElementById('conf-pass').value;
+  if(np.length<6){showToast('Password must be at least 6 characters','⚠️');return;}
+  if(np!==cp){showToast('Passwords do not match','⚠️');return;}
+  currentUser.password=np;
+  saveUser(currentUser.email,currentUser);
+  document.getElementById('new-pass').value='';
+  document.getElementById('conf-pass').value='';
+  showToast('Password updated successfully! 🔒');
+}
+
+// =============================================
+// MODALS
+// =============================================
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+document.querySelectorAll('.modal-overlay').forEach(o=>{
+  o.addEventListener('click', e => { if(e.target===o) o.classList.remove('open'); });
+});
+
+// =============================================
+// LOGOUT
+// =============================================
+function doLogout() {
+  if(!confirm('Sign out of DiabeCare Pro?')) return;
+  clearSession();
+  currentUser = null;
+  showScreen('login');
+  document.getElementById('float-clock').style.display='none';
+  // Reset nav
+  document.querySelectorAll('.nav-item').forEach((n,i)=>n.classList.toggle('active',i===0));
+  document.querySelectorAll('.page').forEach((p,i)=>p.classList.toggle('active',i===0));
+  showToast('Signed out successfully. Stay healthy! 💙');
+}
+
+// =============================================
+// PDF DOWNLOAD
+// =============================================
+function downloadPDF() {
+  if(!currentUser) return;
+  const readings = currentUser.readings || [];
+  if(readings.length === 0) { showToast('No readings to export. Add some blood sugar readings first!','⚠️'); return; }
+
+  showToast('Generating your PDF report…', '📄');
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'portrait', unit:'mm', format:'a4' });
+  const pageW = doc.internal.pageSize.getWidth();
+  const pageH = doc.internal.pageSize.getHeight();
+
+  // ---- Dark header banner ----
+  doc.setFillColor(3, 13, 24);
+  doc.rect(0, 0, pageW, 42, 'F');
+
+  // Accent bar
+  doc.setFillColor(0, 219, 184);
+  doc.rect(0, 0, 5, 42, 'F');
+
+  // Title
+  doc.setTextColor(0, 219, 184);
+  doc.setFontSize(22);
+  doc.setFont('helvetica','bold');
+  doc.text('DiabeCare Pro', 14, 16);
+
+  doc.setTextColor(180, 220, 230);
+  doc.setFontSize(11);
+  doc.setFont('helvetica','normal');
+  doc.text('Blood Sugar Report', 14, 24);
+
+  // Patient info on right
+  const name = (currentUser.fname+' '+currentUser.lname).trim() || currentUser.email;
+  doc.setTextColor(200, 230, 240);
+  doc.setFontSize(9);
+  doc.text(`Patient: ${name}`, pageW-14, 12, {align:'right'});
+  doc.text(`Email: ${currentUser.email}`, pageW-14, 18, {align:'right'});
+  doc.text(`Diabetes Type: ${currentUser.dtype||'—'}`, pageW-14, 24, {align:'right'});
+  doc.text(`Generated: ${new Date().toLocaleString('en-US',{dateStyle:'full',timeStyle:'short'})}`, pageW-14, 30, {align:'right'});
+  if(currentUser.doctor) doc.text(`Doctor: ${currentUser.doctor}`, pageW-14, 36, {align:'right'});
+
+  // ---- Summary stats row ----
+  const total = readings.length;
+  const avg = Math.round(readings.reduce((a,r)=>a+r.level,0)/readings.length);
+  const high = readings.filter(r=>r.level>=126).length;
+  const low = readings.filter(r=>r.level<70).length;
+  const normal = total - high - low;
+  const maxVal = Math.max(...readings.map(r=>r.level));
+  const minVal = Math.min(...readings.map(r=>r.level));
+
+  let y = 52;
+  const boxW = (pageW-28)/4; // 4 boxes with margins
+  const boxes = [
+    {label:'Total Readings', value:total, color:[0,219,184]},
+    {label:'7-Day Average', value:avg+' mg/dL', color:[244,162,97]},
+    {label:'High Readings', value:high, color:[230,57,70]},
+    {label:'Normal Readings', value:normal, color:[6,214,160]},
+  ];
+  boxes.forEach((b,i)=>{
+    const bx = 14 + i*(boxW+2);
+    doc.setFillColor(...b.color.map(c=>Math.round(c*0.15+10)));
+    doc.roundedRect(bx, y, boxW, 20, 3, 3, 'F');
+    doc.setDrawColor(...b.color);
+    doc.setLineWidth(0.5);
+    doc.roundedRect(bx, y, boxW, 20, 3, 3, 'S');
+    doc.setTextColor(...b.color);
+    doc.setFontSize(14);
+    doc.setFont('helvetica','bold');
+    doc.text(String(b.value), bx+boxW/2, y+11, {align:'center'});
+    doc.setTextColor(130,160,180);
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text(b.label, bx+boxW/2, y+17, {align:'center'});
+  });
+
+  y += 28;
+
+  // Min/Max/Range line
+  doc.setFillColor(15, 30, 50);
+  doc.rect(14, y, pageW-28, 12, 'F');
+  doc.setTextColor(100,180,200);
+  doc.setFontSize(8);
+  doc.text(`Min: ${minVal} mg/dL`, 20, y+7.5);
+  doc.text(`Max: ${maxVal} mg/dL`, pageW/2, y+7.5, {align:'center'});
+  doc.text(`Range: ${maxVal-minVal} mg/dL`, pageW-20, y+7.5, {align:'right'});
+  y += 18;
+
+  // ---- Section title ----
+  doc.setFillColor(0, 219, 184);
+  doc.rect(14, y, 3, 8, 'F');
+  doc.setTextColor(0, 219, 184);
+  doc.setFontSize(11);
+  doc.setFont('helvetica','bold');
+  doc.text('Complete Reading History', 20, y+6);
+  y += 14;
+
+  // ---- Table ----
+  const tableRows = [...readings].reverse().map(r => {
+    const dateStr = new Date(r.date).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+    const statusLabel = r.level<70 ? 'Low' : r.level<=125 ? 'Normal' : 'High';
+    return [dateStr, r.time, r.level+' mg/dL', r.type, statusLabel, r.notes||'—'];
+  });
+
+  doc.autoTable({
+    startY: y,
+    head: [['Date','Time','Level','Type','Status','Notes']],
+    body: tableRows,
+    theme: 'grid',
+    styles: {
+      fontSize: 8.5,
+      cellPadding: 3.5,
+      textColor: [210, 235, 245],
+      lineColor: [20, 50, 70],
+      lineWidth: 0.3,
+      font: 'helvetica',
+      fillColor: [8, 22, 36],
+    },
+    headStyles: {
+      fillColor: [0, 90, 110],
+      textColor: [0, 219, 184],
+      fontStyle: 'bold',
+      fontSize: 8,
+      halign: 'center',
+    },
+    alternateRowStyles: { fillColor: [12, 30, 48] },
+    columnStyles: {
+      0: {cellWidth:28, halign:'center'},
+      1: {cellWidth:18, halign:'center'},
+      2: {cellWidth:26, halign:'center', fontStyle:'bold'},
+      3: {cellWidth:28, halign:'center'},
+      4: {cellWidth:20, halign:'center'},
+      5: {cellWidth:'auto'},
+    },
+    didDrawCell(data) {
+      // Color-code the Status column (index 4)
+      if(data.section==='body' && data.column.index===4) {
+        const v = data.cell.text[0];
+        if(v==='High') { doc.setTextColor(230,57,70); }
+        else if(v==='Low') { doc.setTextColor(244,162,97); }
+        else { doc.setTextColor(6,214,160); }
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica','bold');
+        doc.text(v, data.cell.x+data.cell.width/2, data.cell.y+data.cell.height/2+1, {align:'center'});
+      }
+      // Color-code the Level column (index 2)
+      if(data.section==='body' && data.column.index===2) {
+        const level = parseInt(data.cell.text[0]);
+        if(level>=126) doc.setTextColor(230,57,70);
+        else if(level<70) doc.setTextColor(244,162,97);
+        else doc.setTextColor(6,214,160);
+        doc.setFontSize(9);
+        doc.setFont('helvetica','bold');
+        doc.text(data.cell.text[0], data.cell.x+data.cell.width/2, data.cell.y+data.cell.height/2+1, {align:'center'});
+      }
+    }
+  });
+
+  // ---- Footer on each page ----
+  const totalPages = doc.internal.getNumberOfPages();
+  for(let i=1;i<=totalPages;i++){
+    doc.setPage(i);
+    doc.setFillColor(3,13,24);
+    doc.rect(0, pageH-12, pageW, 12, 'F');
+    doc.setFillColor(0,219,184);
+    doc.rect(0, pageH-12, pageW, 0.5, 'F');
+    doc.setTextColor(100,150,170);
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text('DiabeCare Pro — Personal Diabetes Manager', 14, pageH-5);
+    doc.text(`Page ${i} of ${totalPages}`, pageW-14, pageH-5, {align:'right'});
+    doc.text('⚠️ For medical reference only. Always consult your doctor.', pageW/2, pageH-5, {align:'center'});
+  }
+
+  // ---- Save ----
+  const safeName = (currentUser.fname||'user').toLowerCase().replace(/\s/g,'_');
+  const dateStr = new Date().toISOString().split('T')[0];
+  doc.save(`DiabeCare_${safeName}_${dateStr}.pdf`);
+  showToast(`PDF report downloaded! ${total} readings exported. 📄`, '✅');
+}
+
+// =============================================
+// DATA BACKUP / RESTORE (JSON export-import)
+// =============================================
+function exportData() {
+  if(!currentUser) return;
+  const blob = new Blob([JSON.stringify(currentUser, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const safeName = (currentUser.fname||'user').toLowerCase().replace(/\s/g,'_');
+  a.download = `DiabeCare_backup_${safeName}_${new Date().toISOString().split('T')[0]}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Data backup file downloaded! Keep this safe 🔒', '💾');
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if(!data.email) { showToast('Invalid backup file. Please use a DiabeCare backup.','⚠️'); return; }
+      if(!confirm(`Restore data for ${data.email}? This will merge with any existing data.`)) return;
+      // Merge: keep more readings
+      const existing = getUser(data.email);
+      if(existing && existing.readings && existing.readings.length > (data.readings||[]).length) {
+        data.readings = existing.readings;
+      }
+      saveUser(data.email, data);
+      // If it's the current user, reload
+      if(currentUser && currentUser.email === data.email) {
+        currentUser = data;
+        renderDashboard(); renderSugarLog(); renderCustomMeals(); renderProfile(); renderWater();
+      }
+      showToast(`Data restored for ${data.fname||data.email}! ✅`);
+    } catch(err) {
+      showToast('Could not read backup file. Make sure it is a valid DiabeCare JSON file.','⚠️');
+    }
+    event.target.value = '';
+  };
+  reader.readAsText(file);
+}
+
+// Auto-save backup reminder (every 10 minutes while app is open)
+setInterval(() => {
+  if(currentUser) {
+    // Silent re-save to all stores to keep data fresh
+    saveUser(currentUser.email, currentUser);
+  }
+}, 10 * 60 * 1000);
+
+// =============================================
+// PROFILE PICTURE UPLOAD
+// =============================================
+function uploadProfilePic(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('Please select an image file','⚠️'); return; }
+  if (file.size > 5 * 1024 * 1024) { showToast('Image too large. Please use a photo under 5MB','⚠️'); return; }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const img = new Image();
+    img.onload = () => {
+      /* Crop to 200×200 circle via canvas */
+      const canvas = document.createElement('canvas');
+      canvas.width = 200; canvas.height = 200;
+      const ctx = canvas.getContext('2d');
+      /* Draw cropped square centred on image */
+      const size = Math.min(img.width, img.height);
+      const sx   = (img.width  - size) / 2;
+      const sy   = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 200, 200);
+      /* Compress to JPEG ~85% quality */
+      const dataURL = canvas.toDataURL('image/jpeg', 0.85);
+      /* Save to user */
+      currentUser.avatar = dataURL;
+      saveUser(currentUser.email, currentUser);
+      /* Refresh all avatar displays */
+      renderProfile();
+      populateSidebar();
+      applyMobileChrome();
+      showToast('Profile photo updated! 📸');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+  event.target.value = ''; // reset input
+}
+
+
+// No CSS transitions/transforms — everything JS
+// =============================================
+function IS_MOBILE() { return window.innerWidth <= 768; }
+
+/* Apply all mobile chrome based on login state */
+function applyMobileChrome() {
+  const mob = IS_MOBILE();
+  const on  = !!currentUser;
+
+  /* --- Topbar --- */
+  const topbar = document.getElementById('mobile-topbar');
+  topbar.style.display = (mob && on) ? 'flex' : 'none';
+
+  /* --- Bottom nav --- */
+  const bnav = document.getElementById('mob-bottom-nav');
+  bnav.style.display = (mob && on) ? 'grid' : 'none';
+
+  /* --- Desktop float clock --- */
+  const clk = document.getElementById('float-clock');
+  if (clk) clk.style.display = (!mob && on) ? 'block' : 'none';
+
+  /* --- Sidebar close btn --- */
+  const closeBtn = document.getElementById('sb-close-btn');
+  if (closeBtn) closeBtn.style.display = mob ? 'flex' : 'none';
+
+  /* --- Sidebar position --- */
+  const sb = document.getElementById('sidebar');
+  if (mob) {
+    /* Make sidebar a proper off-canvas drawer */
+    Object.assign(sb.style, {
+      position:   'fixed',
+      top:        '0',
+      left:       '0',
+      height:     '100vh',
+      width:      '280px',
+      zIndex:     '9999',
+      transform:  'translateX(-100%)',
+      transition: 'transform 0.3s ease',
+      overflowY:  'auto',
+      webkitOverflowScrolling: 'touch'
+    });
+  } else {
+    /* Restore desktop sidebar */
+    Object.assign(sb.style, {
+      position:   'fixed',
+      top:        '0',
+      left:       '0',
+      height:     '100vh',
+      width:      '250px',
+      zIndex:     '100',
+      transform:  'none',
+      transition: 'none',
+      overflowY:  'auto'
+    });
+  }
+
+  /* --- User avatar in topbar --- */
+  if (mob && on && currentUser) {
+    const av = document.getElementById('mob-user-avatar');
+    if (av) {
+      if (currentUser.avatar) {
+        av.innerHTML = `<img src="${currentUser.avatar}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">`;
+      } else {
+        av.textContent = ((currentUser.fname||'?')[0] + (currentUser.lname||'?')[0]).toUpperCase();
+      }
+      av.style.display = 'flex';
+    }
+  }
+}
+
+function toggleMobileSidebar() {
+  const sb      = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const burger  = document.getElementById('mob-hamburger');
+  if (!sb) return;
+  const isOpen = sb.classList.contains('sb-open');
+  if (isOpen) {
+    closeMobileSidebar();
+  } else {
+    sb.classList.add('sb-open');
+    sb.style.transform = 'translateX(0)';
+    if (overlay) overlay.classList.add('visible');
+    if (burger)  burger.classList.add('open');
+  }
+}
+
+function closeMobileSidebar() {
+  const sb      = document.getElementById('sidebar');
+  const overlay = document.getElementById('sidebar-overlay');
+  const burger  = document.getElementById('mob-hamburger');
+  if (sb) {
+    sb.classList.remove('sb-open');
+    sb.style.transform = 'translateX(-100%)';
+  }
+  if (overlay) overlay.classList.remove('visible');
+  if (burger)  burger.classList.remove('open');
+}
+
+/* Bottom nav tap */
+function mobileNav(pageId, mbnId) {
+  document.querySelectorAll('.mbn-item').forEach(i => i.classList.remove('active'));
+  const el = document.getElementById(mbnId);
+  if (el) el.classList.add('active');
+  let found = null;
+  document.querySelectorAll('.nav-item').forEach(n => {
+    if (n.getAttribute('onclick') && n.getAttribute('onclick').includes("'"+pageId+"'")) found = n;
+  });
+  gotoPage(pageId, found);
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* doLogout — mobile aware */
+function doLogout() {
+  if (!confirm('Sign out of DiabeCare Pro?')) return;
+  clearSession();
+  currentUser = null;
+  showScreen('login');
+  closeMobileSidebar();
+  applyMobileChrome();
+  document.querySelectorAll('.nav-item').forEach((n,i) => n.classList.toggle('active', i===0));
+  document.querySelectorAll('.page').forEach((p,i) => p.classList.toggle('active', i===0));
+  document.querySelectorAll('.mbn-item').forEach((n,i) => n.classList.toggle('active', i===0));
+  showToast('Signed out. Stay healthy! 💙');
+}
+
+/* Resize — re-apply chrome and close sidebar if switching to desktop */
+window.addEventListener('resize', () => {
+  applyMobileChrome();
+  if (!IS_MOBILE()) closeMobileSidebar();
+});
+
+/* Floating + FAB on sugar log page */
+(function(){
+  const fab = document.createElement('button');
+  fab.id = 'mob-fab';
+  fab.innerHTML = '<i class="fas fa-plus"></i>';
+  fab.setAttribute('aria-label', 'Add Reading');
+  Object.assign(fab.style, {
+    position:    'fixed',
+    bottom:      '76px',
+    right:       '16px',
+    zIndex:      '9970',
+    width:       '54px',
+    height:      '54px',
+    borderRadius:'50%',
+    background:  'linear-gradient(135deg,var(--teal),var(--blue))',
+    border:      'none',
+    color:       '#fff',
+    fontSize:    '22px',
+    cursor:      'pointer',
+    boxShadow:   '0 4px 20px rgba(0,219,184,0.5)',
+    display:     'none',
+    alignItems:  'center',
+    justifyContent:'center',
+    transition:  'transform .15s'
+  });
+  fab.addEventListener('touchstart', () => fab.style.transform='scale(.88)', {passive:true});
+  fab.addEventListener('touchend',   () => fab.style.transform='scale(1)',   {passive:true});
+  fab.onclick = () => openAddModal();
+  document.body.appendChild(fab);
+  setInterval(() => {
+    const active = document.getElementById('page-sugar-log')?.classList.contains('active');
+    fab.style.display = (IS_MOBILE() && active && currentUser) ? 'flex' : 'none';
+  }, 350);
+})();
+
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const email = getSession();
+    if(email) {
+      let user = getUser(email);
+      // If main store lost the user data, try to recover from backup
+      if(!user) user = recoverUser(email);
+      if(user) { launchApp(user); return; }
+    }
+    document.getElementById('loading').classList.add('hide');
+    showScreen('login');
+  }, 600);
+});
+</script>
+</body>
+</html>
